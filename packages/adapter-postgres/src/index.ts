@@ -705,13 +705,121 @@ export class PostgresDatabaseAdapter
         }, "removeGoal");
     }
 
-    async createRoom(roomId?: UUID): Promise<UUID> {
+    async createSharedRoom(params: { agentIds: UUID[] }): Promise<UUID> {
         return this.withDatabase(async () => {
-            const newRoomId = roomId || v4();
-            await this.pool.query("INSERT INTO rooms (id) VALUES ($1)", [
-                newRoomId,
-            ]);
-            return newRoomId as UUID;
+            const client = await this.pool.connect();
+            try {
+                await client.query('BEGIN');
+
+                // Create a new room
+                const roomId = v4() as UUID;
+                await client.query(
+                    'INSERT INTO rooms (id) VALUES ($1)',
+                    [roomId]
+                );
+
+                // Add all agents as participants
+                for (const agentId of params.agentIds) {
+                    await client.query(
+                        `INSERT INTO participants (id, "userId", "roomId")
+                        VALUES ($1, $2, $3)`,
+                        [v4(), agentId, roomId]
+                    );
+                }
+
+                // Create relationships between agents
+                for (let i = 0; i < params.agentIds.length; i++) {
+                    for (let j = i + 1; j < params.agentIds.length; j++) {
+                        await client.query(
+                            `INSERT INTO relationships (id, "userA", "userB", "userId", status)
+                            VALUES ($1, $2, $3, $4, 'FRIENDS')
+                            ON CONFLICT DO NOTHING`,
+                            [v4(), params.agentIds[i], params.agentIds[j], params.agentIds[i]]
+                        );
+                    }
+                }
+
+                await client.query('COMMIT');
+                return roomId;
+
+            } catch (error) {
+                await client.query('ROLLBACK');
+                elizaLogger.error('Failed to create shared room:', {
+                    error: error instanceof Error ? error.message : String(error),
+                    agentIds: params.agentIds
+                });
+                throw error;
+            } finally {
+                client.release();
+            }
+        }, 'createSharedRoom');
+    }
+    async getSharedRoom(agentIds: UUID[]): Promise<UUID | null> {
+        return this.withDatabase(async () => {
+            const placeholders = agentIds.map((_, i) => `$${i + 1}`).join(', ');
+            const { rows } = await this.pool.query(`
+                SELECT r.id
+                FROM rooms r
+                WHERE (
+                    SELECT COUNT(DISTINCT p."userId")
+                    FROM participants p
+                    WHERE p."roomId" = r.id
+                    AND p."userId" IN (${placeholders})
+                ) = $${agentIds.length + 1}
+                LIMIT 1
+            `, [...agentIds, agentIds.length]);
+
+            return rows.length > 0 ? rows[0].id : null;
+        }, 'getSharedRoom');
+    }
+
+    async createRoom(roomId?: UUID, participants?: UUID[]): Promise<UUID> {
+        elizaLogger.info("Created room for agents:", {
+            roomId,
+            participants,
+          });
+        return this.withDatabase(async () => {
+            const client = await this.pool.connect();
+            try {
+                await client.query('BEGIN');
+
+                // Create room
+                const newRoomId = roomId || v4() as UUID;
+                await client.query("INSERT INTO rooms (id) VALUES ($1)", [newRoomId]);
+
+                if (participants?.length) {
+                    console.log("participants", participants);
+                    for (const participantId of participants) {
+                        await client.query(
+                            `INSERT INTO participants (id, "userId", "roomId")
+                            VALUES ($1, $2, $3)`,
+                            [v4(), participantId, newRoomId]
+                        );
+                    }
+
+                    // Create relationships between participants
+                    for (let i = 0; i < participants.length; i++) {
+                        for (let j = i + 1; j < participants.length; j++) {
+                            await client.query(
+                                `INSERT INTO relationships (id, "userA", "userB", "userId", status)
+                                VALUES ($1, $2, $3, $4, 'FRIENDS')
+                                ON CONFLICT DO NOTHING`,
+                                [v4(), participants[i], participants[j], participants[i]]
+                            );
+                        }
+                    }
+                }
+
+                await client.query('COMMIT');
+                console.log("newRoomId", newRoomId);
+                return newRoomId;
+            } catch (error) {
+                await client.query('ROLLBACK');
+                elizaLogger.error("Failed to create room:", error);
+                throw error;
+            } finally {
+                client.release();
+            }
         }, "createRoom");
     }
 

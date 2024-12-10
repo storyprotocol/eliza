@@ -10,9 +10,21 @@
 -- DROP TABLE IF EXISTS rooms CASCADE;
 -- DROP TABLE IF EXISTS accounts CASCADE;
 
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'uuid-ossp') THEN
+        CREATE EXTENSION "uuid-ossp";
+    END IF;
 
-CREATE EXTENSION IF NOT EXISTS vector;
-CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
+    IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector') THEN
+        CREATE EXTENSION vector;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'fuzzystrmatch') THEN
+        CREATE EXTENSION fuzzystrmatch;
+    END IF;
+END
+$$;
 
 -- Create a function to determine vector dimension
 CREATE OR REPLACE FUNCTION get_embedding_dimension()
@@ -52,7 +64,7 @@ CREATE TABLE IF NOT EXISTS memories (
     "type" TEXT NOT NULL,
     "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     "content" JSONB NOT NULL,
-    "embedding" vector(get_embedding_dimension()),  -- Dynamic vector size
+    "embedding" vector(1536),  -- Dynamic vector size
     "userId" UUID REFERENCES accounts("id"),
     "agentId" UUID REFERENCES accounts("id"),
     "roomId" UUID REFERENCES rooms("id"),
