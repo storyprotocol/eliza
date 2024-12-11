@@ -527,11 +527,12 @@ async function startAgentConversation(
 
   async function generateAndHandleMessage(
     fromAgent: { id: string; name: string },
-    toAgent: { id: string; name: string }
+    toAgents: { id: string; name: string }[]
   ): Promise<boolean> {
     try {
+      const toAgentNames = toAgents.map((a) => a.name).join(", ");
       elizaLogger.info(
-        `${fromAgent.name} generating message for ${toAgent.name}`
+        `${fromAgent.name} generating message for ${toAgentNames}`
       );
 
       const response = await fetch(
@@ -540,9 +541,10 @@ async function startAgentConversation(
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            text: `[Message to ${toAgent.name}]`,
+            text: `[Message to group: ${toAgentNames}]`,
             userId: fromAgent.id,
             userName: fromAgent.name,
+            roomId: roomId,
           }),
         }
       );
@@ -559,7 +561,11 @@ async function startAgentConversation(
 
       if (data.length > 0) {
         const lastMessage = data[data.length - 1].text;
-        await handleUserInput(lastMessage, toAgent.id);
+        // Send the message to all other agents
+        for (const toAgent of toAgents) {
+          await handleUserInput(lastMessage, toAgent.id);
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
         return true;
       }
 
@@ -573,22 +579,21 @@ async function startAgentConversation(
     }
   }
 
-  // Start conversation with first agent
+  // Start conversation
   try {
     const firstAgent = agents[0];
-    const secondAgent = agents[1];
+    const otherAgents = agents.slice(1);
 
     elizaLogger.info(
-      `Starting conversation between ${firstAgent.name} and ${secondAgent.name}`
+      `Starting group conversation with ${agents.map((a) => a.name).join(", ")}`
     );
 
     // Generate initial message from first agent
-    const success = await generateAndHandleMessage(firstAgent, secondAgent);
+    const success = await generateAndHandleMessage(firstAgent, otherAgents);
 
     if (success) {
       currentAgentIndex = 1;
-      // Add delay before starting the main loop
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 10000));
     } else {
       elizaLogger.error(
         "Failed to generate initial message, but continuing conversation"
@@ -598,28 +603,30 @@ async function startAgentConversation(
     elizaLogger.error("Error in conversation initialization:", error);
   }
 
-  // Main conversation loop
   while (true) {
     try {
       const currentAgent = agents[currentAgentIndex];
-      const nextAgentIndex = (currentAgentIndex + 1) % agentCount;
-      const nextAgent = agents[nextAgentIndex];
+      // Get all other agents as recipients
+      const otherAgents = agents.filter(
+        (_, index) => index !== currentAgentIndex
+      );
 
-      const success = await generateAndHandleMessage(currentAgent, nextAgent);
+      const success = await generateAndHandleMessage(currentAgent, otherAgents);
 
       if (success) {
-        currentAgentIndex = nextAgentIndex;
+        // Move to next agent
+        currentAgentIndex = (currentAgentIndex + 1) % agentCount;
         // Delay between turns
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 10000));
       } else {
         elizaLogger.warn(
           `No message generated from ${currentAgent.name}, retrying in 5 seconds...`
         );
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+        await new Promise((resolve) => setTimeout(resolve, 15000));
       }
     } catch (error) {
       elizaLogger.error("Error in agent conversation:", error);
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 25000));
     }
   }
 }
