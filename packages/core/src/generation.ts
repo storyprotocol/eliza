@@ -146,6 +146,7 @@ export async function generateText({
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
                 });
+                elizaLogger.log("OPENAI RESPONSE", openaiResponse);
                 response = openaiResponse;
 
                 elizaLogger.debug("Received response from OpenAI model.");

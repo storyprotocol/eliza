@@ -716,7 +716,7 @@ async function startAgentConversation(
         }
 
         // Add longer delay between different agent conversations
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     } catch (error) {
       elizaLogger.error("Error in agent conversation:", error);
