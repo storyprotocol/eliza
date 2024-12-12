@@ -64,14 +64,19 @@ export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
 };
 
 export function parseArguments(): {
+  marilyn?: string;
   character?: string;
   characters?: string;
 } {
   try {
     return yargs(process.argv.slice(3))
-      .option("character", {
+    .option("character", {
         type: "string",
         description: "Path to the character JSON file",
+      })
+      .option("marilyn", {
+        type: "string",
+        description: "Path to the Marilyn character JSON file",
       })
       .option("characters", {
         type: "string",
@@ -467,6 +472,17 @@ const startAgents = async () => {
     characters = await loadCharacters(charactersArg);
   }
 
+  let marilynCharacterArg = args.marilyn;
+  let marilynCharacter = null;
+
+  if (marilynCharacterArg) {
+    marilynCharacter = await loadCharacters(marilynCharacterArg);
+    marilynCharacter = marilynCharacter[0];
+  } else {
+    elizaLogger.error("Marilyn character not found, use --marilyn to specify a Marilyn character");
+    process.exit(1);
+  }
+
   let db: IDatabaseAdapter & IDatabaseCacheAdapter;
   try {
     const dataDir = path.join(__dirname, "../data");
@@ -493,6 +509,14 @@ const startAgents = async () => {
         elizaLogger.error(`Failed to start agent ${character.name}:`, error);
       }
     }
+    const marilynAgentInstance = await startAgent(marilynCharacter, directClient);
+    startedAgents.push({
+      id: marilynCharacter.id,
+      agent: marilynAgentInstance,
+      name: marilynCharacter.name,
+    });
+
+    elizaLogger.log(">>>> startedAgents", startedAgents);
 
     // Create shared room for multiple agents
     if (startedAgents.length > 1) {
@@ -504,7 +528,7 @@ const startAgents = async () => {
       });
 
       // Start the conversation
-      await startAgentConversation(startedAgents, db, roomId);
+      await startAgentConversation(startedAgents, db, roomId, marilynCharacter);
     } else {
       elizaLogger.info("Not enough agents to start a conversation");
     }
@@ -520,10 +544,11 @@ const startAgents = async () => {
 async function startAgentConversation(
   agents: { id: string; agent: any[]; name: string }[],
   db: IDatabaseAdapter & IDatabaseCacheAdapter,
-  roomId: string
+  roomId: string,
+  marilynCharacter: Character
 ) {
-  const marilyn = agents.find((agent) => agent.name === "Marilyn");
-  const otherAgents = agents.filter((agent) => agent.name !== "Marilyn");
+  const marilyn = agents.find((agent) => agent.id === marilynCharacter.id);
+  const otherAgents = agents.filter((agent) => agent.id !== marilynCharacter.id);
   elizaLogger.info(`Marilyn: ${marilyn.name}`);
   elizaLogger.info(
     `Other agents: ${otherAgents.map((a) => a.name).join(", ")}`
@@ -540,10 +565,9 @@ async function startAgentConversation(
     toAgent: { id: string; name: string },
     data: Content[]
   ) {
-    elizaLogger.info(">>>> logConversation:", data);
     const message = data[data.length - 1];
     const lastMessage = message.text;
-    if (fromAgent.name === "Marilyn") {
+    if (fromAgent.id === marilynCharacter.id) {
       elizaLogger.info(">>>> Marilyn data:", data);
         const userId = toAgent.id;
         const score = message.score;

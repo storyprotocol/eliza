@@ -34,7 +34,6 @@ import {
     SearchResponse,
 } from "./types.ts";
 import { fal } from "@fal-ai/client";
-import { PostgresDatabaseAdapter } from "@ai16z/adapter-postgres";
 
 /**
  * Send a message to the model for a text generateText - receive a string back and parse how you'd like
