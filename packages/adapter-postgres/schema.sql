@@ -131,10 +131,11 @@ CREATE TABLE IF NOT EXISTS  cache (
     PRIMARY KEY ("key", "agentId")
 );
 
+
 CREATE TABLE IF NOT EXISTS contestant_scores (
     "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     "agentId" UUID NOT NULL REFERENCES accounts("id"),
-    "score" NUMERIC DEFAULT 0 CHECK (score BETWEEN -1 AND 1),
+    "score" NUMERIC DEFAULT 0,
     "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_contestant FOREIGN KEY ("agentId")

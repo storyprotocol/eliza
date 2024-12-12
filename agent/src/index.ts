@@ -636,7 +636,6 @@ async function startAgentConversation(
       }
 
       const data = await response.json();
-      elizaLogger.info(`Data: ${data}`);
 
       data.forEach((message: { text: any }) =>
         elizaLogger.log(`${fromAgent.name}: ${message.text}`)
