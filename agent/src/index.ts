@@ -539,10 +539,6 @@ async function startAgentConversation(
     toAgent: { id: string; name: string }
   ): Promise<boolean> {
     try {
-      elizaLogger.info(
-        `${fromAgent.name} generating message for ${toAgent.name}`
-      );
-
       const response = await fetch(
         `http://localhost:${serverPort}/${fromAgent.id}/message`,
         {
@@ -574,16 +570,7 @@ async function startAgentConversation(
         if (fromAgent.name === "Marilyn") {
           const sentimentScore = 0.1; // TODO: Implement sentiment analysis
 
-          // Get the agentId of the agent talking to Marilyn
-          const userIdResult = await (db as PostgresDatabaseAdapter).query(
-            `SELECT "userId" FROM memories
-               WHERE "agentId" = $1
-               ORDER BY "createdAt" DESC
-               LIMIT 1`,
-            [fromAgent.id]
-          );
-
-          const userId = userIdResult.rows[0]?.agentId;
+          const userId = toAgent.id;
 
           if (userId) {
             elizaLogger.info(
@@ -604,14 +591,23 @@ async function startAgentConversation(
               db as PostgresDatabaseAdapter
             ).query(
               `SELECT * FROM conversation_logs
-               WHERE "contestantId" = $1
+               WHERE "agentId" = $1
                AND "marilynResponse" IS NULL
                ORDER BY "contestantMessageTime" DESC
                LIMIT 1`,
               [userId]
             );
 
+            elizaLogger.info(
+              `Previous message result: ${previousMessageResult.rows}`
+            );
+
             if (previousMessageResult.rows.length > 0) {
+              elizaLogger.info("Debug: Update values:", {
+                message: lastMessage,
+                score: sentimentScore,
+                rowId: previousMessageResult.rows[0].id,
+              });
               // Update the existing record with Marilyn's response
               await (db as PostgresDatabaseAdapter).query(
                 `UPDATE conversation_logs
@@ -621,13 +617,17 @@ async function startAgentConversation(
                  WHERE id = $3`,
                 [lastMessage, sentimentScore, previousMessageResult.rows[0].id]
               );
+              elizaLogger.info(
+                `Debug: Successfully updated conversation`,
+                lastMessage
+              );
             }
           }
         } else {
           // This is a contestant's message - create new record
           await (db as PostgresDatabaseAdapter).query(
             `INSERT INTO conversation_logs (
-              "contestantId",
+              "agentId",
               "contestantMessage",
               "contestantMessageTime",
               "roomId"

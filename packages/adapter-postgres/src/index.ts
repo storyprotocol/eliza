@@ -743,7 +743,7 @@ export class PostgresDatabaseAdapter
                 }
 
                 await client.query('COMMIT');
-                console.log("newRoomId", newRoomId);
+
                 return newRoomId;
             } catch (error) {
                 await client.query('ROLLBACK');
