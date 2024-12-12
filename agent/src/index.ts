@@ -11,6 +11,7 @@ import {
   CacheManager,
   Character,
   Clients,
+  Content,
   DbCacheAdapter,
   FsCacheAdapter,
   IAgentRuntime,
@@ -496,7 +497,7 @@ const startAgents = async () => {
     // Create shared room for multiple agents
     if (startedAgents.length > 1) {
       const agentIds = startedAgents.map((agent) => agent.id);
-      const roomId = await db.createRoom(undefined, agentIds);
+      const roomId = await db.createRoom(undefined);
       elizaLogger.info("Created room for agents:", {
         roomId,
         agents: startedAgents.map((a) => a.name),
@@ -534,6 +535,83 @@ async function startAgentConversation(
   }
   const serverPort = parseInt(settings.SERVER_PORT || "3000");
 
+  async function logConversation(
+    fromAgent: { id: string; name: string },
+    toAgent: { id: string; name: string },
+    data: Content[]
+  ) {
+    elizaLogger.info(">>>> logConversation:", data);
+    const message = data[data.length - 1];
+    const lastMessage = message.text;
+    if (fromAgent.name === "Marilyn") {
+      elizaLogger.info(">>>> Marilyn data:", data);
+        const userId = toAgent.id;
+        const score = message.score;
+        if (userId) {
+          elizaLogger.info(
+            `Saving score for userId: ${userId} with score: ${score}`
+          );
+
+          // Save to contestant_scores
+          await (db as PostgresDatabaseAdapter).query(
+            `INSERT INTO contestant_scores ("agentId", "score")
+             VALUES ($1, $2)
+             ON CONFLICT ("agentId") DO UPDATE
+             SET "score" = contestant_scores.score + EXCLUDED.score`,
+            [userId, score]
+          );
+
+          // Get the previous message from the contestant
+          const previousMessageResult = await (
+            db as PostgresDatabaseAdapter
+          ).query(
+            `SELECT * FROM conversation_logs
+             WHERE "agentId" = $1
+             AND "marilynResponse" IS NULL
+             ORDER BY "contestantMessageTime" DESC
+             LIMIT 1`,
+            [userId]
+          );
+
+          elizaLogger.info(
+            `Previous message result: ${previousMessageResult.rows}`
+          );
+
+          if (previousMessageResult.rows.length > 0) {
+            elizaLogger.info("Debug: Update values:", {
+              message: lastMessage,
+              score: score,
+              rowId: previousMessageResult.rows[0].id,
+            });
+            // Update the existing record with Marilyn's response
+            await (db as PostgresDatabaseAdapter).query(
+              `UPDATE conversation_logs
+               SET "marilynResponse" = $1,
+                   "marilynResponseTime" = CURRENT_TIMESTAMP,
+                   "interactionScore" = $2
+               WHERE id = $3`,
+              [lastMessage, score, previousMessageResult.rows[0].id]
+            );
+            elizaLogger.info(
+              `Debug: Successfully updated conversation`,
+              lastMessage
+            );
+          }
+        }
+      } else {
+        // This is a contestant's message - create new record
+        await (db as PostgresDatabaseAdapter).query(
+          `INSERT INTO conversation_logs (
+            "agentId",
+            "contestantMessage",
+            "contestantMessageTime",
+            "roomId"
+          ) VALUES ($1, $2, CURRENT_TIMESTAMP, $3)`,
+          [fromAgent.id, lastMessage, roomId]
+        );
+      }
+}
+
   async function generateAndHandleMessage(
     fromAgent: { id: string; name: string },
     toAgent: { id: string; name: string }
@@ -565,79 +643,12 @@ async function startAgentConversation(
       );
 
       if (data.length > 0) {
+        // Bachelor sends message to Marilyn
         const lastMessage = data[data.length - 1].text;
-
-        if (fromAgent.name === "Marilyn") {
-          const sentimentScore = 0.1; // TODO: Implement sentiment analysis
-
-          const userId = toAgent.id;
-
-          if (userId) {
-            elizaLogger.info(
-              `Saving score for userId: ${userId} with score: ${sentimentScore}`
-            );
-
-            // Save to contestant_scores
-            await (db as PostgresDatabaseAdapter).query(
-              `INSERT INTO contestant_scores ("agentId", "score")
-               VALUES ($1, $2)
-               ON CONFLICT ("agentId") DO UPDATE
-               SET "score" = contestant_scores.score + EXCLUDED.score`,
-              [userId, sentimentScore]
-            );
-
-            // Get the previous message from the contestant
-            const previousMessageResult = await (
-              db as PostgresDatabaseAdapter
-            ).query(
-              `SELECT * FROM conversation_logs
-               WHERE "agentId" = $1
-               AND "marilynResponse" IS NULL
-               ORDER BY "contestantMessageTime" DESC
-               LIMIT 1`,
-              [userId]
-            );
-
-            elizaLogger.info(
-              `Previous message result: ${previousMessageResult.rows}`
-            );
-
-            if (previousMessageResult.rows.length > 0) {
-              elizaLogger.info("Debug: Update values:", {
-                message: lastMessage,
-                score: sentimentScore,
-                rowId: previousMessageResult.rows[0].id,
-              });
-              // Update the existing record with Marilyn's response
-              await (db as PostgresDatabaseAdapter).query(
-                `UPDATE conversation_logs
-                 SET "marilynResponse" = $1,
-                     "marilynResponseTime" = CURRENT_TIMESTAMP,
-                     "interactionScore" = $2
-                 WHERE id = $3`,
-                [lastMessage, sentimentScore, previousMessageResult.rows[0].id]
-              );
-              elizaLogger.info(
-                `Debug: Successfully updated conversation`,
-                lastMessage
-              );
-            }
-          }
-        } else {
-          // This is a contestant's message - create new record
-          await (db as PostgresDatabaseAdapter).query(
-            `INSERT INTO conversation_logs (
-              "agentId",
-              "contestantMessage",
-              "contestantMessageTime",
-              "roomId"
-            ) VALUES ($1, $2, CURRENT_TIMESTAMP, $3)`,
-            [fromAgent.id, lastMessage, roomId]
-          );
-        }
-
-        // Send the message to the recipient
-        await handleUserInput(lastMessage, toAgent.id);
+        await logConversation(fromAgent, toAgent, data);
+        // Marilyn replies to Bachelor
+        const msgReplyData = await handleUserInput(lastMessage, toAgent.id);
+        await logConversation(toAgent, fromAgent, msgReplyData);
         return true;
       }
 
@@ -658,18 +669,13 @@ async function startAgentConversation(
         // Other agent sends message to Marilyn
         const success1 = await generateAndHandleMessage(otherAgent, marilyn);
         if (success1) {
-          elizaLogger.info(`Marilyn responding to ${otherAgent.name}`);
           await new Promise((resolve) => setTimeout(resolve, 5000));
-
-          // Marilyn responds to the other agent
-          const success2 = await generateAndHandleMessage(marilyn, otherAgent);
-          if (success2) {
-            await new Promise((resolve) => setTimeout(resolve, 5000));
-          }
+        } else {
+          elizaLogger.info(">>>> failed to generate message:", success1);
         }
 
         // Add longer delay between different agent conversations
-        await new Promise((resolve) => setTimeout(resolve, 10000));
+        await new Promise((resolve) => setTimeout(resolve, 5000));
       }
     } catch (error) {
       elizaLogger.error("Error in agent conversation:", error);
@@ -711,6 +717,7 @@ async function handleUserInput(input, agentId) {
 
     const data = await response.json();
     data.forEach((message) => elizaLogger.log(`${"Agent"}: ${message.text}`));
+    return data;
   } catch (error) {
     console.error("Error fetching response:", error);
   }

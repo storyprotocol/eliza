@@ -34,6 +34,7 @@ import {
     SearchResponse,
 } from "./types.ts";
 import { fal } from "@fal-ai/client";
+import { PostgresDatabaseAdapter } from "@ai16z/adapter-postgres";
 
 /**
  * Send a message to the model for a text generateText - receive a string back and parse how you'd like
@@ -63,8 +64,6 @@ export async function generateText({
         console.error("generateText context is empty");
         return "";
     }
-
-    elizaLogger.log("Generating text...");
 
     elizaLogger.info("Generating text with options:", {
         modelProvider: runtime.modelProvider,
@@ -108,7 +107,6 @@ export async function generateText({
     const max_response_length = models[provider].settings.maxOutputTokens;
 
     const apiKey = runtime.token;
-
     try {
         elizaLogger.debug(
             `Trimming context to max length of ${max_context_length} tokens.`
@@ -131,15 +129,19 @@ export async function generateText({
             case ModelProviderName.LLAMACLOUD:
             case ModelProviderName.TOGETHER: {
                 elizaLogger.debug("Initializing OpenAI model.");
-                const openai = createOpenAI({ apiKey, baseURL: endpoint });
 
+                const openai = createOpenAI({ apiKey, baseURL: endpoint });
+                const systemPrompt = `${runtime.character.system ?? settings.SYSTEM_PROMPT ?? ""}
+                        ## Response format (JSON)
+                        {
+                        "message": "xxx",
+                        "score": -1
+                        }
+                        `
                 const { text: openaiResponse } = await aiGenerateText({
                     model: openai.languageModel(model),
                     prompt: context,
-                    system:
-                        runtime.character.system ??
-                        settings.SYSTEM_PROMPT ??
-                        undefined,
+                    system: systemPrompt,
                     temperature: temperature,
                     maxTokens: max_response_length,
                     frequencyPenalty: frequency_penalty,
@@ -147,6 +149,7 @@ export async function generateText({
                 });
 
                 response = openaiResponse;
+
                 elizaLogger.debug("Received response from OpenAI model.");
                 break;
             }
@@ -783,19 +786,19 @@ export async function generateMessageResponse({
     context: string;
     modelClass: string;
 }): Promise<Content> {
+    // elizaLogger.info(">>>> generateMessageResponse:", context);
     const max_context_length =
         models[runtime.modelProvider].settings.maxInputTokens;
     context = trimTokens(context, max_context_length, "gpt-4o");
     let retryLength = 1000; // exponential backoff
     while (true) {
         try {
-            elizaLogger.log("Generating message response..");
-
             const response = await generateText({
                 runtime,
                 context,
                 modelClass,
             });
+
 
             // try parsing the response as JSON, if null then try again
             const parsedContent = parseJSONObjectFromText(response) as Content;
@@ -1207,6 +1210,8 @@ export async function handleProvider(
     options: ProviderOptions
 ): Promise<GenerateObjectResult<unknown>> {
     const { provider, runtime, context, modelClass } = options;
+    elizaLogger.info(">>>> handleProvider:", provider);
+
     switch (provider) {
         case ModelProviderName.OPENAI:
         case ModelProviderName.ETERNALAI:
@@ -1257,6 +1262,7 @@ async function handleOpenAI({
     mode,
     modelOptions,
 }: ProviderOptions): Promise<GenerateObjectResult<unknown>> {
+
     const baseURL = models.openai.endpoint || undefined;
     const openai = createOpenAI({ apiKey, baseURL });
     return await aiGenerateObject({

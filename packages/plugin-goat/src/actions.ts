@@ -17,6 +17,7 @@ import {
     composeContext,
     generateObjectV2,
 } from "@ai16z/eliza";
+import { elizaLogger } from "@ai16z/eliza";
 
 type GetOnChainActionsParams<TWalletClient extends WalletClient> = {
     chain: ChainForWalletClient<TWalletClient>;
@@ -192,6 +193,8 @@ async function generateResponse(
     runtime: IAgentRuntime,
     context: string
 ): Promise<string> {
+    elizaLogger.info(">>>> generateResponse:", generateResponse);
+
     return generateText({
         runtime,
         context,
