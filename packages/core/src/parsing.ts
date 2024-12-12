@@ -11,31 +11,31 @@ If {{agentName}} is talking too much, you can choose [IGNORE]
 Your response must include one of the options.`;
 
 export const parseShouldRespondFromText = (
-    text: string
+  text: string
 ): "RESPOND" | "IGNORE" | "STOP" | null => {
-    const match = text
-        .split("\n")[0]
-        .trim()
-        .replace("[", "")
-        .toUpperCase()
-        .replace("]", "")
-        .match(/^(RESPOND|IGNORE|STOP)$/i);
-    return match
-        ? (match[0].toUpperCase() as "RESPOND" | "IGNORE" | "STOP")
-        : text.includes("RESPOND")
-          ? "RESPOND"
-          : text.includes("IGNORE")
-            ? "IGNORE"
-            : text.includes("STOP")
-              ? "STOP"
-              : null;
+  const match = text
+    .split("\n")[0]
+    .trim()
+    .replace("[", "")
+    .toUpperCase()
+    .replace("]", "")
+    .match(/^(RESPOND|IGNORE|STOP)$/i);
+  return match
+    ? (match[0].toUpperCase() as "RESPOND" | "IGNORE" | "STOP")
+    : text.includes("RESPOND")
+    ? "RESPOND"
+    : text.includes("IGNORE")
+    ? "IGNORE"
+    : text.includes("STOP")
+    ? "STOP"
+    : null;
 };
 
 export const booleanFooter = `Respond with a YES or a NO.`;
 
 export const parseBooleanFromText = (text: string) => {
-    const match = text.match(/^(YES|NO)$/i);
-    return match ? match[0].toUpperCase() === "YES" : null;
+  const match = text.match(/^(YES|NO)$/i);
+  return match ? match[0].toUpperCase() === "YES" : null;
 };
 
 export const stringArrayFooter = `Respond with a JSON array containing the values in a JSON block formatted for markdown with this structure:
@@ -58,42 +58,42 @@ Your response must include the JSON block.`;
  * @returns An array parsed from the JSON string if successful; otherwise, null.
  */
 export function parseJsonArrayFromText(text: string) {
-    let jsonData = null;
+  let jsonData = null;
 
-    // First try to parse with the original JSON format
-    const jsonBlockMatch = text.match(jsonBlockPattern);
+  // First try to parse with the original JSON format
+  const jsonBlockMatch = text.match(jsonBlockPattern);
 
-    if (jsonBlockMatch) {
-        try {
-            // Replace single quotes with double quotes before parsing
-            const normalizedJson = jsonBlockMatch[1].replace(/'/g, '"');
-            jsonData = JSON.parse(normalizedJson);
-        } catch (e) {
-            console.error("Error parsing JSON:", e);
-        }
+  if (jsonBlockMatch) {
+    try {
+      // Replace single quotes with double quotes before parsing
+      const normalizedJson = jsonBlockMatch[1].replace(/'/g, '"');
+      jsonData = JSON.parse(normalizedJson);
+    } catch (e) {
+      console.error("Error parsing JSON:", e);
     }
+  }
 
-    // If that fails, try to find an array pattern
-    if (!jsonData) {
-        const arrayPattern = /\[\s*['"][^'"]*['"]\s*\]/;
-        const arrayMatch = text.match(arrayPattern);
+  // If that fails, try to find an array pattern
+  if (!jsonData) {
+    const arrayPattern = /\[\s*['"][^'"]*['"]\s*\]/;
+    const arrayMatch = text.match(arrayPattern);
 
-        if (arrayMatch) {
-            try {
-                // Replace single quotes with double quotes before parsing
-                const normalizedJson = arrayMatch[0].replace(/'/g, '"');
-                jsonData = JSON.parse(normalizedJson);
-            } catch (e) {
-                console.error("Error parsing JSON:", e);
-            }
-        }
+    if (arrayMatch) {
+      try {
+        // Replace single quotes with double quotes before parsing
+        const normalizedJson = arrayMatch[0].replace(/'/g, '"');
+        jsonData = JSON.parse(normalizedJson);
+      } catch (e) {
+        console.error("Error parsing JSON:", e);
+      }
     }
+  }
 
-    if (Array.isArray(jsonData)) {
-        return jsonData;
-    }
+  if (Array.isArray(jsonData)) {
+    return jsonData;
+  }
 
-    return null;
+  return null;
 }
 
 /**
@@ -107,42 +107,42 @@ export function parseJsonArrayFromText(text: string) {
  * @returns An object parsed from the JSON string if successful; otherwise, null or the result of parsing an array.
  */
 export function parseJSONObjectFromText(
-    text: string
+  text: string
 ): Record<string, any> | null {
-    let jsonData = null;
+  let jsonData = null;
 
-    const jsonBlockMatch = text.match(jsonBlockPattern);
+  const jsonBlockMatch = text.match(jsonBlockPattern);
 
-    if (jsonBlockMatch) {
-        try {
-            jsonData = JSON.parse(jsonBlockMatch[1]);
-        } catch (e) {
-            console.error("Error parsing JSON:", e);
-            return null;
-        }
-    } else {
-        const objectPattern = /{[\s\S]*?}/;
-        const objectMatch = text.match(objectPattern);
-
-        if (objectMatch) {
-            try {
-                jsonData = JSON.parse(objectMatch[0]);
-            } catch (e) {
-                console.error("Error parsing JSON:", e);
-                return null;
-            }
-        }
+  if (jsonBlockMatch) {
+    try {
+      jsonData = JSON.parse(jsonBlockMatch[1]);
+    } catch (e) {
+      console.error("Error parsing JSON:", e);
+      return null;
     }
+  } else {
+    const objectPattern = /{[\s\S]*?}/;
+    const objectMatch = text.match(objectPattern);
 
-    if (
-        typeof jsonData === "object" &&
-        jsonData !== null &&
-        !Array.isArray(jsonData)
-    ) {
-        return jsonData;
-    } else if (typeof jsonData === "object" && Array.isArray(jsonData)) {
-        return parseJsonArrayFromText(text);
-    } else {
+    if (objectMatch) {
+      try {
+        jsonData = JSON.parse(objectMatch[0]);
+      } catch (e) {
+        console.error("Error parsing JSON:", e);
         return null;
+      }
     }
+  }
+
+  if (
+    typeof jsonData === "object" &&
+    jsonData !== null &&
+    !Array.isArray(jsonData)
+  ) {
+    return jsonData;
+  } else if (typeof jsonData === "object" && Array.isArray(jsonData)) {
+    return parseJsonArrayFromText(text);
+  } else {
+    return null;
+  }
 }

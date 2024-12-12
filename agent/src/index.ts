@@ -51,11 +51,22 @@ import path from "path";
 import readline from "readline";
 import { fileURLToPath } from "url";
 import yargs from "yargs";
+import express from "express";
+import apiRouter from "./api";
+import cors from "cors";
 
 import { mainCharacter } from "../maincharacter";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use("/api", apiRouter);
+app.listen(process.env.API_PORT || 3001, () => {
+  console.log(`API server running on port ${process.env.API_PORT || 3001}`);
+});
 
 export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
   const waitTime =
@@ -70,7 +81,7 @@ export function parseArguments(): {
 } {
   try {
     return yargs(process.argv.slice(3))
-    .option("character", {
+      .option("character", {
         type: "string",
         description: "Path to the character JSON file",
       })
@@ -479,7 +490,9 @@ const startAgents = async () => {
     marilynCharacter = await loadCharacters(marilynCharacterArg);
     marilynCharacter = marilynCharacter[0];
   } else {
-    elizaLogger.error("Marilyn character not found, use --marilyn to specify a Marilyn character");
+    elizaLogger.error(
+      "Marilyn character not found, use --marilyn to specify a Marilyn character"
+    );
     process.exit(1);
   }
 
@@ -509,7 +522,10 @@ const startAgents = async () => {
         elizaLogger.error(`Failed to start agent ${character.name}:`, error);
       }
     }
-    const marilynAgentInstance = await startAgent(marilynCharacter, directClient);
+    const marilynAgentInstance = await startAgent(
+      marilynCharacter,
+      directClient
+    );
     startedAgents.push({
       id: marilynCharacter.id,
       agent: marilynAgentInstance,
@@ -548,7 +564,9 @@ async function startAgentConversation(
   marilynCharacter: Character
 ) {
   const marilyn = agents.find((agent) => agent.id === marilynCharacter.id);
-  const otherAgents = agents.filter((agent) => agent.id !== marilynCharacter.id);
+  const otherAgents = agents.filter(
+    (agent) => agent.id !== marilynCharacter.id
+  );
   elizaLogger.info(`Marilyn: ${marilyn.name}`);
   elizaLogger.info(
     `Other agents: ${otherAgents.map((a) => a.name).join(", ")}`
@@ -569,72 +587,72 @@ async function startAgentConversation(
     const lastMessage = message.text;
     if (fromAgent.id === marilynCharacter.id) {
       elizaLogger.info(">>>> Marilyn data:", data);
-        const userId = toAgent.id;
-        const score = message.score;
-        if (userId) {
-          elizaLogger.info(
-            `Saving score for userId: ${userId} with score: ${score}`
-          );
+      const userId = toAgent.id;
+      const score = message.score;
+      if (userId) {
+        elizaLogger.info(
+          `Saving score for userId: ${userId} with score: ${score}`
+        );
 
-          // Save to contestant_scores
-          await (db as PostgresDatabaseAdapter).query(
-            `INSERT INTO contestant_scores ("agentId", "score")
+        // Save to contestant_scores
+        await (db as PostgresDatabaseAdapter).query(
+          `INSERT INTO contestant_scores ("agentId", "score")
              VALUES ($1, $2)
              ON CONFLICT ("agentId") DO UPDATE
              SET "score" = contestant_scores.score + EXCLUDED.score`,
-            [userId, score]
-          );
+          [userId, score]
+        );
 
-          // Get the previous message from the contestant
-          const previousMessageResult = await (
-            db as PostgresDatabaseAdapter
-          ).query(
-            `SELECT * FROM conversation_logs
+        // Get the previous message from the contestant
+        const previousMessageResult = await (
+          db as PostgresDatabaseAdapter
+        ).query(
+          `SELECT * FROM conversation_logs
              WHERE "agentId" = $1
              AND "marilynResponse" IS NULL
              ORDER BY "contestantMessageTime" DESC
              LIMIT 1`,
-            [userId]
-          );
+          [userId]
+        );
 
-          elizaLogger.info(
-            `Previous message result: ${previousMessageResult.rows}`
-          );
+        elizaLogger.info(
+          `Previous message result: ${previousMessageResult.rows}`
+        );
 
-          if (previousMessageResult.rows.length > 0) {
-            elizaLogger.info("Debug: Update values:", {
-              message: lastMessage,
-              score: score,
-              rowId: previousMessageResult.rows[0].id,
-            });
-            // Update the existing record with Marilyn's response
-            await (db as PostgresDatabaseAdapter).query(
-              `UPDATE conversation_logs
+        if (previousMessageResult.rows.length > 0) {
+          elizaLogger.info("Debug: Update values:", {
+            message: lastMessage,
+            score: score,
+            rowId: previousMessageResult.rows[0].id,
+          });
+          // Update the existing record with Marilyn's response
+          await (db as PostgresDatabaseAdapter).query(
+            `UPDATE conversation_logs
                SET "marilynResponse" = $1,
                    "marilynResponseTime" = CURRENT_TIMESTAMP,
                    "interactionScore" = $2
                WHERE id = $3`,
-              [lastMessage, score, previousMessageResult.rows[0].id]
-            );
-            elizaLogger.info(
-              `Debug: Successfully updated conversation`,
-              lastMessage
-            );
-          }
+            [lastMessage, score, previousMessageResult.rows[0].id]
+          );
+          elizaLogger.info(
+            `Debug: Successfully updated conversation`,
+            lastMessage
+          );
         }
-      } else {
-        // This is a contestant's message - create new record
-        await (db as PostgresDatabaseAdapter).query(
-          `INSERT INTO conversation_logs (
+      }
+    } else {
+      // This is a contestant's message - create new record
+      await (db as PostgresDatabaseAdapter).query(
+        `INSERT INTO conversation_logs (
             "agentId",
             "contestantMessage",
             "contestantMessageTime",
             "roomId"
           ) VALUES ($1, $2, CURRENT_TIMESTAMP, $3)`,
-          [fromAgent.id, lastMessage, roomId]
-        );
-      }
-}
+        [fromAgent.id, lastMessage, roomId]
+      );
+    }
+  }
 
   async function generateAndHandleMessage(
     fromAgent: { id: string; name: string },
