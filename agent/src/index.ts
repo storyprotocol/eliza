@@ -564,7 +564,7 @@ async function startAgentConversation(
       );
 
       if (data.length > 0) {
-        const lastMessage = data[data.length - 1].text;
+        const lastMessage = data[0].text;
         if (fromAgent.name === "Marilyn") {
           const sentimentScore = 0.1; // TODO: Implement sentiment analysis
 
@@ -638,8 +638,6 @@ async function startAgentConversation(
           );
         }
 
-        // Send the message to the recipient
-        await handleUserInput(lastMessage, toAgent.id);
         return true;
       }
 
