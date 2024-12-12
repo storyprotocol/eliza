@@ -558,7 +558,6 @@ async function startAgentConversation(
       }
 
       const data = await response.json();
-      elizaLogger.info(`Data: ${data}`);
 
       data.forEach((message: { text: any }) =>
         elizaLogger.log(`${fromAgent.name}: ${message.text}`)
@@ -566,7 +565,6 @@ async function startAgentConversation(
 
       if (data.length > 0) {
         const lastMessage = data[data.length - 1].text;
-
         if (fromAgent.name === "Marilyn") {
           const sentimentScore = 0.1; // TODO: Implement sentiment analysis
 
@@ -598,29 +596,33 @@ async function startAgentConversation(
               [userId]
             );
 
-            elizaLogger.info(
-              `Previous message result: ${previousMessageResult.rows}`
-            );
-
-            if (previousMessageResult.rows.length > 0) {
-              elizaLogger.info("Debug: Update values:", {
-                message: lastMessage,
-                score: sentimentScore,
-                rowId: previousMessageResult.rows[0].id,
+            if (
+              previousMessageResult.rows.length > 0 &&
+              data &&
+              data.length > 0
+            ) {
+              const marilynResponse = data[0].text;
+              elizaLogger.info("Saving Marilyn's response:", {
+                message: marilynResponse,
+                previousMessage:
+                  previousMessageResult.rows[0].contestantMessage,
               });
-              // Update the existing record with Marilyn's response
-              await (db as PostgresDatabaseAdapter).query(
+
+              const updateResult = await (db as PostgresDatabaseAdapter).query(
                 `UPDATE conversation_logs
                  SET "marilynResponse" = $1,
                      "marilynResponseTime" = CURRENT_TIMESTAMP,
                      "interactionScore" = $2
-                 WHERE id = $3`,
-                [lastMessage, sentimentScore, previousMessageResult.rows[0].id]
+                 WHERE id = $3
+                 RETURNING *`,
+                [
+                  marilynResponse,
+                  sentimentScore,
+                  previousMessageResult.rows[0].id,
+                ]
               );
-              elizaLogger.info(
-                `Debug: Successfully updated conversation`,
-                lastMessage
-              );
+
+              elizaLogger.info("Update result:", updateResult.rows[0]);
             }
           }
         } else {
