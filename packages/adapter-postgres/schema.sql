@@ -131,11 +131,43 @@ CREATE TABLE IF NOT EXISTS  cache (
     PRIMARY KEY ("key", "agentId")
 );
 
+CREATE TABLE IF NOT EXISTS contestant_scores (
+    "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "agentId" UUID NOT NULL REFERENCES accounts("id"),
+    "score" NUMERIC DEFAULT 0 CHECK (score BETWEEN -1 AND 1),
+    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_contestant FOREIGN KEY ("agentId")
+        REFERENCES accounts("id") ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS conversation_logs (
+    "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "agentId" UUID NOT NULL REFERENCES accounts("id"),
+    "contestantMessage" TEXT NOT NULL,
+    "contestantMessageTime" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    "marilynResponse" TEXT NOT NULL,
+    "marilynResponseTime" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    "marilynThoughts" TEXT,
+    "metadata" JSONB,
+    "interactionScore" NUMERIC DEFAULT 0,
+    CONSTRAINT check_score_range CHECK ("interactionScore" BETWEEN -1 AND 1),
+    "roomId" UUID,
+    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_contestant FOREIGN KEY ("agentId")
+        REFERENCES accounts("id") ON DELETE CASCADE,
+    CONSTRAINT idx_contestant_time
+        UNIQUE ("agentId", "contestantMessageTime")
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_memories_embedding ON memories USING hnsw ("embedding" vector_cosine_ops);
 CREATE INDEX IF NOT EXISTS idx_memories_type_room ON memories("type", "roomId");
 CREATE INDEX IF NOT EXISTS idx_participants_user ON participants("userId");
 CREATE INDEX IF NOT EXISTS idx_participants_room ON participants("roomId");
 CREATE INDEX IF NOT EXISTS idx_relationships_users ON relationships("userA", "userB");
+CREATE INDEX IF NOT EXISTS idx_contestant_scores_contestant
+    ON contestant_scores("agentId");
 
 COMMIT;

@@ -477,6 +477,41 @@ CREATE TABLE IF NOT EXISTS "public"."participants" (
 
 ALTER TABLE "public"."participants" OWNER TO "postgres";
 
+CREATE TABLE IF NOT EXISTS contestant_scores (
+    "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "agentId" UUID NOT NULL REFERENCES accounts("id"),
+    "score" NUMERIC DEFAULT 0 CHECK (score BETWEEN -1 AND 1),
+    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_contestant FOREIGN KEY ("agentId")
+        REFERENCES accounts("id") ON DELETE CASCADE
+);
+
+ALTER TABLE "public"."contestant_scores" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS conversation_logs (
+    "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "agentId" UUID NOT NULL REFERENCES accounts("id"),
+    "contestantMessage" TEXT NOT NULL,
+    "contestantMessageTime" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    "marilynResponse" TEXT NOT NULL,
+    "marilynResponseTime" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    "marilynThoughts" TEXT,
+    "metadata" JSONB,
+    "interactionScore" NUMERIC DEFAULT 0,
+    CONSTRAINT check_score_range CHECK ("interactionScore" BETWEEN -1 AND 1),
+    "roomId" UUID,
+    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_contestant FOREIGN KEY ("agentId")
+        REFERENCES accounts("id") ON DELETE CASCADE,
+    CONSTRAINT idx_contestant_time
+        UNIQUE ("agentId", "contestantMessageTime")
+);
+
+ALTER TABLE "public"."conversation_logs" OWNER TO "postgres";
+
 
 CREATE OR REPLACE FUNCTION "public"."get_participant_userState"("roomId" "uuid", "userId" "uuid")
 RETURNS "text"
@@ -703,6 +738,10 @@ GRANT ALL ON TABLE "public"."secrets" TO "service_role";
 GRANT ALL ON TABLE "public"."secrets" TO "supabase_admin";
 GRANT ALL ON TABLE "public"."secrets" TO "supabase_auth_admin";
 
+GRANT ALL ON TABLE "public"."contestant_scores" TO "authenticated";
+GRANT ALL ON TABLE "public"."contestant_scores" TO "service_role";
+GRANT ALL ON TABLE "public"."contestant_scores" TO "supabase_admin";
+GRANT ALL ON TABLE "public"."contestant_scores" TO "supabase_auth_admin";
 
 GRANT ALL ON FUNCTION "public"."get_participant_userState"("roomId" "uuid", "userId" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_participant_userState"("roomId" "uuid", "userId" "uuid") TO "service_role";
@@ -710,7 +749,7 @@ GRANT ALL ON FUNCTION "public"."get_participant_userState"("roomId" "uuid", "use
 GRANT ALL ON FUNCTION "public"."get_participant_userState"("roomId" "uuid", "userId" "uuid") TO "supabase_auth_admin";
 
 GRANT ALL ON FUNCTION "public"."set_participant_userState"("roomId" "uuid", "userId" "uuid", "state" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."set_participant_userState"("roomId" "uuid", "userId" "uuid", "state" "text") TO "service_role";  
+GRANT ALL ON FUNCTION "public"."set_participant_userState"("roomId" "uuid", "userId" "uuid", "state" "text") TO "service_role";
 GRANT ALL ON FUNCTION "public"."set_participant_userState"("roomId" "uuid", "userId" "uuid", "state" "text") TO "supabase_admin";
 GRANT ALL ON FUNCTION "public"."set_participant_userState"("roomId" "uuid", "userId" "uuid", "state" "text") TO "supabase_auth_admin";
 
