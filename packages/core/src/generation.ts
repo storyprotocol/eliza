@@ -134,7 +134,7 @@ export async function generateText({
                         ## Response format (JSON)
                         {
                         "message": "xxx",
-                        "score": -1
+                        "score": -0.8
                         }
                         `
                 const { text: openaiResponse } = await aiGenerateText({
@@ -146,7 +146,6 @@ export async function generateText({
                     frequencyPenalty: frequency_penalty,
                     presencePenalty: presence_penalty,
                 });
-
                 response = openaiResponse;
 
                 elizaLogger.debug("Received response from OpenAI model.");
