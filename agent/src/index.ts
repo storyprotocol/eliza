@@ -53,12 +53,16 @@ import { fileURLToPath } from "url";
 import yargs from "yargs";
 import express from "express";
 import apiRouter from "./api";
+import cors from "cors";
 
 import { mainCharacter } from "../maincharacter";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
 const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use("/api", apiRouter);
 app.listen(process.env.API_PORT || 3001, () => {
   console.log(`API server running on port ${process.env.API_PORT || 3001}`);
@@ -77,7 +81,7 @@ export function parseArguments(): {
 } {
   try {
     return yargs(process.argv.slice(3))
-    .option("character", {
+      .option("character", {
         type: "string",
         description: "Path to the character JSON file",
       })
@@ -486,7 +490,9 @@ const startAgents = async () => {
     marilynCharacter = await loadCharacters(marilynCharacterArg);
     marilynCharacter = marilynCharacter[0];
   } else {
-    elizaLogger.error("Marilyn character not found, use --marilyn to specify a Marilyn character");
+    elizaLogger.error(
+      "Marilyn character not found, use --marilyn to specify a Marilyn character"
+    );
     process.exit(1);
   }
 
@@ -516,7 +522,10 @@ const startAgents = async () => {
         elizaLogger.error(`Failed to start agent ${character.name}:`, error);
       }
     }
-    const marilynAgentInstance = await startAgent(marilynCharacter, directClient);
+    const marilynAgentInstance = await startAgent(
+      marilynCharacter,
+      directClient
+    );
     startedAgents.push({
       id: marilynCharacter.id,
       agent: marilynAgentInstance,
@@ -555,7 +564,9 @@ async function startAgentConversation(
   marilynCharacter: Character
 ) {
   const marilyn = agents.find((agent) => agent.id === marilynCharacter.id);
-  const otherAgents = agents.filter((agent) => agent.id !== marilynCharacter.id);
+  const otherAgents = agents.filter(
+    (agent) => agent.id !== marilynCharacter.id
+  );
   elizaLogger.info(`Marilyn: ${marilyn.name}`);
   elizaLogger.info(
     `Other agents: ${otherAgents.map((a) => a.name).join(", ")}`
