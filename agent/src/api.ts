@@ -36,35 +36,26 @@ router.get("/chat-data", async (req: any, res: any) => {
     });
 
     const query = `
-          WITH filtered_messages AS (
-              SELECT *
-              FROM conversation_logs
-              WHERE "contestantMessageTime" >= $1
-              AND "contestantMessageTime" <= $2
-              ${
-                agentName
-                  ? 'AND "agentId" IN (SELECT id FROM accounts WHERE name = $3)'
-                  : ""
-              }
-          )
-          SELECT DISTINCT ON (cs."agentId")
-              cs."agentId",
-              cs.score as cumulative_score,
-              cl."contestantMessage",
-              cl."marilynResponse",
-              cl."contestantMessageTime",
-              cl."marilynResponseTime",
-              cl."interactionScore",
-              a.name,
-              a.username,
-              a."avatarUrl",
-              a.details
-          FROM contestant_scores cs
-          LEFT JOIN filtered_messages cl ON cs."agentId" = cl."agentId"
-          LEFT JOIN accounts a ON cs."agentId"::text = a.id::text
-          ${agentName ? "WHERE a.name = $3" : ""}
-          ORDER BY cs."agentId", cl."contestantMessageTime" DESC
-      `;
+SELECT
+    cs."agentId",
+    cs.score as cumulative_score,
+    cl."contestantMessage",
+    cl."marilynResponse",
+    cl."contestantMessageTime",
+    cl."marilynResponseTime",
+    cl."interactionScore",
+    a.name,
+    a.username,
+    a."avatarUrl",
+    a.details
+FROM contestant_scores cs
+LEFT JOIN conversation_logs cl ON cs."agentId" = cl."agentId"
+LEFT JOIN accounts a ON cs."agentId"::text = a.id::text
+WHERE cl."contestantMessageTime" >= $1
+AND cl."contestantMessageTime" <= $2
+${agentName ? "AND a.name = $3" : ""}
+ORDER BY cs."agentId", cl."contestantMessageTime" ASC
+`;
 
     const params = agentName
       ? [startTime, endTime, agentName]
