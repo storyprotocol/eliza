@@ -14,17 +14,6 @@ CREATE SCHEMA IF NOT EXISTS "public";
 
 ALTER SCHEMA "public" OWNER TO "pg_database_owner";
 
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_extension
-        WHERE extname = 'vector'
-    ) THEN
-        CREATE EXTENSION vector
-        SCHEMA extensions;
-    END IF;
-END $$;
 
 DO $$
 BEGIN
