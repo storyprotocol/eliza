@@ -6,6 +6,7 @@
         "start": "pnpm --filter \"@ai16z/agent\" start --isRoot",
         "start:client": "pnpm --dir client start --isRoot",
         "start:debug": "cross-env NODE_ENV=development VERBOSE=true DEBUG=eliza:* pnpm --filter \"@ai16z/agent\" start --isRoot",
+        "start:api": "pnpm --filter \"@ai16z/agent\" start:api",
         "dev": "bash ./scripts/dev.sh",
         "lint": "bash ./scripts/lint.sh",
         "prettier-check": "npx prettier --check .",

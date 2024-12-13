@@ -6,6 +6,7 @@ import { DiscordClientInterface } from "@ai16z/client-discord";
 import { TelegramClientInterface } from "@ai16z/client-telegram";
 import { TwitterClientInterface } from "@ai16z/client-twitter";
 import { FarcasterAgentClient } from "@ai16z/client-farcaster";
+import { SupabaseDatabaseAdapter } from "@ai16z/adapter-supabase";
 import {
   AgentRuntime,
   CacheManager,
@@ -59,14 +60,6 @@ import { mainCharacter } from "../maincharacter";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
-const app = express();
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use("/api", apiRouter);
-app.listen(process.env.API_PORT || 3001, () => {
-  console.log(`API server running on port ${process.env.API_PORT || 3001}`);
-});
 
 export const wait = (minTime: number = 1000, maxTime: number = 3000) => {
   const waitTime =
@@ -266,17 +259,32 @@ export function getTokenForProvider(
       );
   }
 }
-
 function initializeDatabase(dataDir: string) {
-  if (process.env.POSTGRES_URL) {
+  if (process.env.SUPABASE_URL) {
+    console.log("process.env.SUPABASE_URL", process.env.SUPABASE_URL);
+    elizaLogger.info("Initializing Supabase connection...");
+    const db = new SupabaseDatabaseAdapter(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_ANON_KEY!
+    );
+
+    db.init()
+      .then(() => {
+        elizaLogger.success("Successfully connected to Supabase database");
+      })
+      .catch((error) => {
+        elizaLogger.error("Failed to connect to Supabase:", error);
+      });
+
+    return db;
+  } else if (process.env.POSTGRES_URL) {
     console.log("process.env.POSTGRES_URL", process.env.POSTGRES_URL);
-    elizaLogger.info("Initializing PostgreSQL connection... hello hello");
+    elizaLogger.info("Initializing PostgreSQL connection...");
     const db = new PostgresDatabaseAdapter({
       connectionString: process.env.POSTGRES_URL,
       parseInputs: true,
     });
 
-    // Test the connection
     db.init()
       .then(() => {
         elizaLogger.success("Successfully connected to PostgreSQL database");
@@ -287,10 +295,10 @@ function initializeDatabase(dataDir: string) {
 
     return db;
   } else {
+    // ... existing SQLite code ...
     const filePath =
       process.env.SQLITE_FILE ?? path.resolve(dataDir, "db.sqlite");
     console.log("filePath", filePath);
-    // ":memory:";
     const db = new SqliteDatabaseAdapter(new Database(filePath));
     return db;
   }

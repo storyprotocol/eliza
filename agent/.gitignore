@@ -2,6 +2,7 @@
 !index.ts
 !character.ts
 !api.ts
+!apiServer.ts
 !maincharacter.ts
 .env
 *.env
