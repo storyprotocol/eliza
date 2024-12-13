@@ -295,7 +295,6 @@ function initializeDatabase(dataDir: string) {
 
     return db;
   } else {
-    // ... existing SQLite code ...
     const filePath =
       process.env.SQLITE_FILE ?? path.resolve(dataDir, "db.sqlite");
     console.log("filePath", filePath);
@@ -730,8 +729,12 @@ async function startAgentConversation(
       elizaLogger.error("Error in agent conversation:", error);
       await new Promise((resolve) => setTimeout(resolve, 25000));
     }
-    const waitTime = parseInt(process.env.AGENT_MESSAGE_INTERVAL_SECONDS || "5");
-    elizaLogger.info(`Waiting for next agent message interval: ${waitTime} seconds`);
+    const waitTime = parseInt(
+      process.env.AGENT_MESSAGE_INTERVAL_SECONDS || "5"
+    );
+    elizaLogger.info(
+      `Waiting for next agent message interval: ${waitTime} seconds`
+    );
     await new Promise((resolve) => setTimeout(resolve, waitTime * 1000));
   }
 }
