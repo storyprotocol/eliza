@@ -19,18 +19,6 @@ BEGIN
     IF NOT EXISTS (
         SELECT 1
         FROM pg_extension
-        WHERE extname = 'vectssor'
-    ) THEN
-        CREATE EXTENSION vectsssor
-        SCHEMA extensions;
-    END IF;
-END $$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_extension
         WHERE extname = 'fuzzystrmatch'
     ) THEN
         CREATE EXTENSION fuzzystrmatch
