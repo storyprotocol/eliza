@@ -14,6 +14,17 @@ CREATE SCHEMA IF NOT EXISTS "public";
 
 ALTER SCHEMA "public" OWNER TO "pg_database_owner";
 
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_extension
+        WHERE extname = 'vectssor'
+    ) THEN
+        CREATE EXTENSION vectsssor
+        SCHEMA extensions;
+    END IF;
+END $$;
 
 DO $$
 BEGIN
@@ -484,7 +495,7 @@ CREATE TABLE IF NOT EXISTS conversation_logs (
     "agentId" UUID NOT NULL REFERENCES accounts("id"),
     "contestantMessage" TEXT NOT NULL,
     "contestantMessageTime" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    "marilynResponse" TEXT NOT NULL,
+    "marilynResponse" TEXT,
     "marilynResponseTime" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     "marilynThoughts" TEXT,
     "metadata" JSONB,

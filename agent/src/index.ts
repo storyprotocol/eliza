@@ -604,8 +604,16 @@ async function startAgentConversation(
         elizaLogger.info(
           `Saving score for userId: ${userId} with score: ${score}`
         );
-
         // Save to contestant_scores
+        await (db as PostgresDatabaseAdapter).query(
+            `INSERT INTO contestant_scores ("agentId", "score")
+               VALUES ($1, $2)
+               ON CONFLICT ("agentId") DO UPDATE
+               SET "score" = contestant_scores.score + EXCLUDED.score`,
+          [userId, score]
+        );
+
+        // Save to conversation_logs
         await (db as PostgresDatabaseAdapter).query(
           `INSERT INTO conversation_logs (
                 "agentId",
@@ -784,7 +792,11 @@ async function startAgentConversation(
             // Add longer delay between different agent conversations
             await new Promise((resolve) => setTimeout(resolve, 1000));
           }
+        } else {
+          elizaLogger.error("Failed to get Marilyn's opening message");
         }
+      } else {
+        elizaLogger.error("Failed to get Marilyn's opening message");
       }
 
       const waitTime = parseInt(
