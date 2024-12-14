@@ -8,6 +8,14 @@ const router = Router();
 router.use(express.json());
 router.use(express.urlencoded({ extended: true }));
 
+interface AgentData {
+  name: string;
+  score: number;
+  profile: any;
+  messages: any[];
+  questions: Set<string> | string[];
+}
+
 const NAMESPACE_UUID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
 const userSessions = new Map<
   string,
@@ -44,6 +52,7 @@ SELECT
     cl."contestantMessageTime",
     cl."marilynResponseTime",
     cl."interactionScore",
+    cl."question",
     a.name,
     a.username,
     a."avatarUrl",
@@ -75,14 +84,20 @@ ORDER BY cs."agentId", cl."contestantMessageTime" ASC
               row.details?.description || `Contestant ${row.name || agentId}`,
           },
           messages: [],
+          questions: new Set(),
         };
       }
 
       if (row.contestantMessage) {
+        if (row.question) {
+          acc[agentId].questions.add(row.question);
+        }
+
         acc[agentId].messages.push({
           name: row.username || row.name || agentId,
           content: row.contestantMessage,
           created_at: row.contestantMessageTime,
+          question: row.question,
         });
 
         if (row.marilynResponse) {
@@ -90,6 +105,7 @@ ORDER BY cs."agentId", cl."contestantMessageTime" ASC
             name: "marilyn",
             content: row.marilynResponse,
             created_at: row.marilynResponseTime,
+            question: row.question,
           });
         }
       }
@@ -97,10 +113,24 @@ ORDER BY cs."agentId", cl."contestantMessageTime" ASC
       return acc;
     }, {});
 
+    const agentsWithArrayQuestions = Object.entries(agents).reduce(
+      (
+        acc: { [key: string]: AgentData },
+        [key, value]: [string, AgentData]
+      ) => {
+        acc[key] = {
+          ...(value as AgentData),
+          questions: Array.from(value.questions as Set<string>),
+        };
+        return acc;
+      },
+      {}
+    );
+
     res.json({
       status: "success",
       data: {
-        agents: Object.values(agents),
+        agents: Object.values(agentsWithArrayQuestions),
       },
     });
   } catch (error) {
