@@ -587,10 +587,15 @@ async function startAgentConversation(
   async function logConversation(
     fromAgent: { id: string; name: string },
     toAgent: { id: string; name: string },
-    data: Content[]
+    data: Content[],
+    question?: string
   ) {
     const message = data[data.length - 1];
-    const lastMessage = message.text;
+    const lastMessage = message.message || message.text;
+    if (!lastMessage) {
+      elizaLogger.error("No message content found:", message);
+      return;
+    }
     if (fromAgent.id === marilynCharacter.id) {
       elizaLogger.info(">>>> Marilyn data:", data);
       const userId = toAgent.id;
@@ -602,11 +607,14 @@ async function startAgentConversation(
 
         // Save to contestant_scores
         await (db as PostgresDatabaseAdapter).query(
-          `INSERT INTO contestant_scores ("agentId", "score")
-             VALUES ($1, $2)
-             ON CONFLICT ("agentId") DO UPDATE
-             SET "score" = contestant_scores.score + EXCLUDED.score`,
-          [userId, score]
+          `INSERT INTO conversation_logs (
+                "agentId",
+                "contestantMessage",
+                "contestantMessageTime",
+                "roomId",
+                "question"
+              ) VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4)`,
+          [fromAgent.id, lastMessage, roomId, question]
         );
 
         // Get the previous message from the contestant
@@ -636,9 +644,10 @@ async function startAgentConversation(
             `UPDATE conversation_logs
                SET "marilynResponse" = $1,
                    "marilynResponseTime" = CURRENT_TIMESTAMP,
-                   "interactionScore" = $2
+                   "interactionScore" = $2,
+                   "question" = COALESCE($4, "question")
                WHERE id = $3`,
-            [lastMessage, score, previousMessageResult.rows[0].id]
+            [lastMessage, score, previousMessageResult.rows[0].id, question]
           );
           elizaLogger.info(
             `Debug: Successfully updated conversation`,
@@ -662,7 +671,8 @@ async function startAgentConversation(
 
   async function generateAndHandleMessage(
     fromAgent: { id: string; name: string },
-    toAgent: { id: string; name: string }
+    toAgent: { id: string; name: string },
+    currentQuestion?: string
   ): Promise<boolean> {
     try {
       const response = await fetch(
@@ -671,7 +681,7 @@ async function startAgentConversation(
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            text: `[Message to: ${toAgent.name}]`,
+            text: `[Respond to Marilyn's question: ${currentQuestion}]`,
             userId: fromAgent.id,
             userName: fromAgent.name,
             roomId: roomId,
@@ -692,10 +702,15 @@ async function startAgentConversation(
       if (data.length > 0) {
         // Bachelor sends message to Marilyn
         const lastMessage = data[data.length - 1].text;
-        await logConversation(fromAgent, toAgent, data);
+        await logConversation(fromAgent, toAgent, data, currentQuestion);
         // Marilyn replies to Bachelor
         const msgReplyData = await handleUserInput(lastMessage, toAgent.id);
-        await logConversation(toAgent, fromAgent, msgReplyData);
+        await logConversation(
+          toAgent,
+          fromAgent,
+          msgReplyData,
+          currentQuestion
+        );
         return true;
       }
 
@@ -711,30 +726,78 @@ async function startAgentConversation(
 
   while (true) {
     try {
-      for (const otherAgent of otherAgents) {
-        elizaLogger.info(`${otherAgent.name} sending message to Marilyn`);
-        // Other agent sends message to Marilyn
-        const success1 = await generateAndHandleMessage(otherAgent, marilyn);
-        if (success1) {
-          await new Promise((resolve) => setTimeout(resolve, 5000));
-        } else {
-          elizaLogger.info(">>>> failed to generate message:", success1);
+      // Start with Marilyn asking a dating question
+      elizaLogger.info("Marilyn starting round table discussion");
+      const marilynOpeningMessage = await fetch(
+        `http://localhost:${serverPort}/${marilyn.id}/message`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: "Start a group discussion with a thought-provoking dating or relationship question",
+            userId: marilyn.id,
+            userName: marilyn.name,
+            roomId: roomId,
+          }),
         }
+      );
 
-        // Add longer delay between different agent conversations
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (marilynOpeningMessage.ok) {
+        const openingData = await marilynOpeningMessage.json();
+        elizaLogger.info("Debug - Full opening data:", openingData);
+
+        if (openingData.length > 0) {
+          const currentQuestion = openingData[0].message || openingData[0].text;
+          // Log Marilyn's opening question and store it in the database
+          elizaLogger.info(
+            `Marilyn opens discussion: ${openingData[0].message}`
+          );
+          await (db as PostgresDatabaseAdapter).query(
+            `INSERT INTO conversation_logs (
+              "agentId",
+              "contestantMessage",
+              "marilynResponse",
+              "contestantMessageTime",
+              "marilynResponseTime",
+              "roomId",
+              "question"
+            ) VALUES ($1, $2, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $3, $2)`,
+            [marilyn.id, currentQuestion, roomId]
+          );
+
+          // Have each agent respond to Marilyn's question
+          for (const otherAgent of otherAgents) {
+            elizaLogger.info(
+              `${otherAgent.name} responding to Marilyn's question`
+            );
+            const success = await generateAndHandleMessage(
+              otherAgent,
+              marilyn,
+              currentQuestion
+            );
+            if (success) {
+              await new Promise((resolve) => setTimeout(resolve, 5000));
+            } else {
+              elizaLogger.info(">>>> failed to generate message:", success);
+            }
+
+            // Add longer delay between different agent conversations
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          }
+        }
       }
+
+      const waitTime = parseInt(
+        process.env.AGENT_MESSAGE_INTERVAL_SECONDS || "5"
+      );
+      elizaLogger.info(
+        `Waiting for next round table discussion: ${waitTime} seconds`
+      );
+      await new Promise((resolve) => setTimeout(resolve, waitTime * 1000));
     } catch (error) {
       elizaLogger.error("Error in agent conversation:", error);
       await new Promise((resolve) => setTimeout(resolve, 25000));
     }
-    const waitTime = parseInt(
-      process.env.AGENT_MESSAGE_INTERVAL_SECONDS || "5"
-    );
-    elizaLogger.info(
-      `Waiting for next agent message interval: ${waitTime} seconds`
-    );
-    await new Promise((resolve) => setTimeout(resolve, waitTime * 1000));
   }
 }
 
