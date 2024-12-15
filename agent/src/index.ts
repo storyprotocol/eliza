@@ -527,6 +527,7 @@ const startAgents = async () => {
           agent: agentInstance,
           name: character.name,
         });
+        await saveAccountStoryMetadata(character, db);
         elizaLogger.info(`Successfully started agent: ${character.name}`);
       } catch (error) {
         elizaLogger.error(`Failed to start agent ${character.name}:`, error);
@@ -541,7 +542,7 @@ const startAgents = async () => {
       agent: marilynAgentInstance,
       name: marilynCharacter.name,
     });
-
+    await saveAccountStoryMetadata(marilynCharacter, db);
     elizaLogger.log(">>>> startedAgents", startedAgents);
 
     // Create shared room for multiple agents
@@ -566,6 +567,91 @@ const startAgents = async () => {
     throw error;
   }
 };
+
+async function saveAccountStoryMetadata(character: Character, db: IDatabaseAdapter & IDatabaseCacheAdapter) {
+    console.log(">>>>>> saveAccountStoryMetadata", character.id);
+    var agentIpId = null;
+    var agentWalletAddress = null;
+    var agentWalletPublicKey = null;
+    var agentWalletPrivateKey = null;
+    var agentLicenseTermId = null;
+    var agentLicenseTermUri = null;
+    var agentIpRegistrationTxnHash = null;
+    var agentAvatarUrl = null;
+    switch(character.id) {
+        case process.env.MARILYN_AGENT_ID:
+            agentIpId = process.env.MARILYN_IP_ID;
+            agentWalletAddress = process.env.MARILYN_WALLET_ADDRESS;
+            agentWalletPublicKey = process.env.MARILYN_WALLET_PUBLIC_KEY;
+            agentWalletPrivateKey = process.env.MARILYN_WALLET_PRIVATE_KEY;
+            agentLicenseTermId = process.env.MARILYN_LICENSE_TERM_ID;
+            agentLicenseTermUri = process.env.MARILYN_LICENSE_TERM_URI;
+            agentIpRegistrationTxnHash = process.env.MARILYN_IP_REGISTRATION_TXN_HASH;
+            agentAvatarUrl = process.env.MARILYN_PICTURE_URL;
+            break;
+        case process.env.AGENT1_AGENT_ID:
+            agentIpId = process.env.AGENT1_IP_ID;
+            agentWalletAddress = process.env.AGENT1_WALLET_ADDRESS;
+            agentWalletPublicKey = process.env.AGENT1_WALLET_PUBLIC_KEY;
+            agentWalletPrivateKey = process.env.AGENT1_WALLET_PRIVATE_KEY;
+            agentLicenseTermId = process.env.AGENT1_LICENSE_TERM_ID;
+            agentLicenseTermUri = process.env.AGENT1_LICENSE_TERM_URI;
+            agentIpRegistrationTxnHash = process.env.AGENT1_IP_REGISTRATION_TXN_HASH;
+            agentAvatarUrl = process.env.AGENT1_PICTURE_URL;
+            break;
+        case process.env.AGENT2_AGENT_ID:
+            agentIpId = process.env.AGENT2_IP_ID;
+            agentWalletAddress = process.env.AGENT2_WALLET_ADDRESS;
+            agentWalletPublicKey = process.env.AGENT2_WALLET_PUBLIC_KEY;
+            agentWalletPrivateKey = process.env.AGENT2_WALLET_PRIVATE_KEY;
+            agentLicenseTermId = process.env.AGENT2_LICENSE_TERM_ID;
+            agentLicenseTermUri = process.env.AGENT2_LICENSE_TERM_URI;
+            agentIpRegistrationTxnHash = process.env.AGENT2_IP_REGISTRATION_TXN_HASH;
+            agentAvatarUrl = process.env.AGENT2_PICTURE_URL;
+            break;
+        case process.env.AGENT3_AGENT_ID:
+            agentIpId = process.env.AGENT3_IP_ID;
+            agentWalletAddress = process.env.AGENT3_WALLET_ADDRESS;
+            agentWalletPublicKey = process.env.AGENT3_WALLET_PUBLIC_KEY;
+            agentWalletPrivateKey = process.env.AGENT3_WALLET_PRIVATE_KEY;
+            agentLicenseTermId = process.env.AGENT3_LICENSE_TERM_ID;
+            agentLicenseTermUri = process.env.AGENT3_LICENSE_TERM_URI;
+            agentIpRegistrationTxnHash = process.env.AGENT3_IP_REGISTRATION_TXN_HASH;
+            agentAvatarUrl = process.env.AGENT3_PICTURE_URL;
+            break;
+        default:
+            elizaLogger.error("Agent not found:", character.id);
+            throw new Error("Agent not found");
+    }
+
+    const result = await (db as PostgresDatabaseAdapter).query(
+        `UPDATE accounts
+        SET "ipId" = $1,
+            "walletAddress" = $2,
+            "walletPublicKey" = $3,
+            "walletPrivateKey" = $4,
+            "licenseTermId" = $5,
+            "licenseTermUri" = $6,
+            "ipRegistrationTxnHash" = $7,
+            "character" = $8,
+            "avatarUrl" = $9
+        WHERE id = $10`,
+        [
+            agentIpId,
+            agentWalletAddress,
+            agentWalletPublicKey,
+            agentWalletPrivateKey,
+            agentLicenseTermId,
+            agentLicenseTermUri,
+            agentIpRegistrationTxnHash,
+            character,
+            agentAvatarUrl,
+            character.id
+        ]
+    )
+
+    elizaLogger.info("Saved account story metadata for agent:", character.id, result);
+}
 
 async function startAgentConversation(
   agents: { id: string; agent: any[]; name: string }[],

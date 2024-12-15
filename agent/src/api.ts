@@ -56,7 +56,15 @@ SELECT
     a.name,
     a.username,
     a."avatarUrl",
-    a.details
+    a.details,
+    a."ipId",
+    a."walletAddress",
+    a."walletPublicKey",
+    a."walletPrivateKey",
+    a."licenseTermId",
+    a."licenseTermUri",
+    a."ipRegistrationTxnHash",
+    a."character"
 FROM contestant_scores cs
 LEFT JOIN conversation_logs cl ON cs."agentId" = cl."agentId"
 LEFT JOIN accounts a ON cs."agentId"::text = a.id::text
@@ -82,6 +90,12 @@ ORDER BY cs."agentId", cl."contestantMessageTime" ASC
             picture_url: row.avatarUrl || `https://example.com/${agentId}.jpg`,
             description:
               row.details?.description || `Contestant ${row.name || agentId}`,
+            ipId: row.ipId || null,
+            walletAddress: row.walletAddress || null,
+            licenseTermId: row.licenseTermId || null,
+            licenseTermUri: row.licenseTermUri || null,
+            ipRegistrationTxnHash: row.ipRegistrationTxnHash || null,
+            character: row.character || null,
           },
           messages: [],
           questions: new Set(),

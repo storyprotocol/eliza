@@ -760,4 +760,13 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "supabase_admin";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "supabase_auth_admin";
 
+ALTER TABLE "accounts" ADD COLUMN "ipId" VARCHAR;
+ALTER TABLE "accounts" ADD COLUMN "licenseTermId" VARCHAR;
+ALTER TABLE "accounts" ADD COLUMN "licenseTermUri" VARCHAR;
+ALTER TABLE "accounts" ADD COLUMN "ipRegistrationTxnHash" VARCHAR;
+ALTER TABLE "accounts" ADD COLUMN "walletAddress" VARCHAR;
+ALTER TABLE "accounts" ADD COLUMN "walletPublicKey" VARCHAR;
+ALTER TABLE "accounts" ADD COLUMN "walletPrivateKey" VARCHAR;
+ALTER TABLE "accounts" ADD COLUMN "character" JSONB;
+
 RESET ALL;
