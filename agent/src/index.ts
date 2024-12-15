@@ -44,6 +44,7 @@ import { createNodePlugin } from "@ai16z/plugin-node";
 import { solanaPlugin } from "@ai16z/plugin-solana";
 import { aptosPlugin, TransferAptosToken } from "@ai16z/plugin-aptos";
 import { flowPlugin } from "@ai16z/plugin-flow";
+import { storyPlugin } from "@ai16z/plugin-story";
 import { teePlugin } from "@ai16z/plugin-tee";
 import Database from "better-sqlite3";
 import fs from "fs";
@@ -259,13 +260,13 @@ export function getTokenForProvider(
   }
 }
 function initializeDatabase(dataDir: string) {
-  if (process.env.SUPABASE_URL) {
-    console.log("process.env.SUPABASE_URL", process.env.SUPABASE_URL);
-    elizaLogger.info("Initializing Supabase connection...");
-    const db = new SupabaseDatabaseAdapter(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_ANON_KEY!
-    );
+  if (process.env.POSTGRES_URL) {
+    console.log("process.env.POSTGRES_URL", process.env.POSTGRES_URL);
+    elizaLogger.info("Initializing PostgreSQL connection...");
+    const db = new PostgresDatabaseAdapter({
+      connectionString: process.env.POSTGRES_URL,
+      parseInputs: true,
+    });
 
     db.init()
       .then(() => {
@@ -367,63 +368,66 @@ export function createAgent(
 
   nodePlugin ??= createNodePlugin();
 
-  return new AgentRuntime({
-    databaseAdapter: db,
-    token,
-    modelProvider: character.modelProvider,
-    evaluators: [],
-    character,
-    plugins: [
-      bootstrapPlugin,
-      getSecret(character, "CONFLUX_CORE_PRIVATE_KEY") ? confluxPlugin : null,
-      nodePlugin,
-      getSecret(character, "SOLANA_PUBLIC_KEY") ||
-      (getSecret(character, "WALLET_PUBLIC_KEY") &&
-        !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
-        ? solanaPlugin
-        : null,
-      getSecret(character, "EVM_PRIVATE_KEY") ||
-      (getSecret(character, "WALLET_PUBLIC_KEY") &&
-        !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
-        ? evmPlugin
-        : null,
-      getSecret(character, "ZEROG_PRIVATE_KEY") ? zgPlugin : null,
-      getSecret(character, "COINBASE_COMMERCE_KEY")
-        ? coinbaseCommercePlugin
-        : null,
-      getSecret(character, "FAL_API_KEY") ||
-      getSecret(character, "OPENAI_API_KEY") ||
-      getSecret(character, "HEURIST_API_KEY")
-        ? imageGenerationPlugin
-        : null,
-      ...(getSecret(character, "COINBASE_API_KEY") &&
-      getSecret(character, "COINBASE_PRIVATE_KEY")
-        ? [
-            coinbaseMassPaymentsPlugin,
-            tradePlugin,
-            tokenContractPlugin,
-            advancedTradePlugin,
-          ]
-        : []),
-      getSecret(character, "COINBASE_API_KEY") &&
-      getSecret(character, "COINBASE_PRIVATE_KEY") &&
-      getSecret(character, "COINBASE_NOTIFICATION_URI")
-        ? webhookPlugin
-        : null,
-      getSecret(character, "WALLET_SECRET_SALT") ? teePlugin : null,
-      getSecret(character, "ALCHEMY_API_KEY") ? goatPlugin : null,
-      getSecret(character, "FLOW_ADDRESS") &&
-      getSecret(character, "FLOW_PRIVATE_KEY")
-        ? flowPlugin
-        : null,
-      getSecret(character, "APTOS_PRIVATE_KEY") ? aptosPlugin : null,
-    ].filter(Boolean),
-    providers: [],
-    actions: [],
-    services: [],
-    managers: [],
-    cacheManager: cache,
-  });
+    return new AgentRuntime({
+        databaseAdapter: db,
+        token,
+        modelProvider: character.modelProvider,
+        evaluators: [],
+        character,
+        plugins: [
+            bootstrapPlugin,
+            getSecret(character, "CONFLUX_CORE_PRIVATE_KEY")
+                ? confluxPlugin
+                : null,
+            nodePlugin,
+            getSecret(character, "SOLANA_PUBLIC_KEY") ||
+            (getSecret(character, "WALLET_PUBLIC_KEY") &&
+                !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
+                ? solanaPlugin
+                : null,
+            getSecret(character, "EVM_PRIVATE_KEY") ||
+            (getSecret(character, "WALLET_PUBLIC_KEY") &&
+                !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
+                ? evmPlugin
+                : null,
+            getSecret(character, "ZEROG_PRIVATE_KEY") ? zgPlugin : null,
+            getSecret(character, "COINBASE_COMMERCE_KEY")
+                ? coinbaseCommercePlugin
+                : null,
+            getSecret(character, "FAL_API_KEY") ||
+            getSecret(character, "OPENAI_API_KEY") ||
+            getSecret(character, "HEURIST_API_KEY")
+                ? imageGenerationPlugin
+                : null,
+            ...(getSecret(character, "COINBASE_API_KEY") &&
+            getSecret(character, "COINBASE_PRIVATE_KEY")
+                ? [
+                      coinbaseMassPaymentsPlugin,
+                      tradePlugin,
+                      tokenContractPlugin,
+                      advancedTradePlugin,
+                  ]
+                : []),
+            getSecret(character, "COINBASE_API_KEY") &&
+            getSecret(character, "COINBASE_PRIVATE_KEY") &&
+            getSecret(character, "COINBASE_NOTIFICATION_URI")
+                ? webhookPlugin
+                : null,
+            getSecret(character, "WALLET_SECRET_SALT") ? teePlugin : null,
+            getSecret(character, "ALCHEMY_API_KEY") ? goatPlugin : null,
+            getSecret(character, "FLOW_ADDRESS") &&
+            getSecret(character, "FLOW_PRIVATE_KEY")
+                ? flowPlugin
+                : null,
+            getSecret(character, "APTOS_PRIVATE_KEY") ? aptosPlugin : null,
+            getSecret(character, "STORY_PRIVATE_KEY") ? storyPlugin : null,
+        ].filter(Boolean),
+        providers: [],
+        actions: [],
+        services: [],
+        managers: [],
+        cacheManager: cache,
+    });
 }
 
 function intializeFsCache(baseDir: string, character: Character) {

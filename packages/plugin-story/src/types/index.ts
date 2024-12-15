@@ -58,11 +58,23 @@ export interface ChainConfig {
 }
 
 // Action parameters
-// TODO: Add Story Action Types
 export interface RegisterIPParams {
-    contractAddress: Address;
-    tokenId: string;
-    chain: SupportedChain;
+    title: string;
+    description: string;
+    ipType: string;
+}
+
+export interface LicenseIPParams {
+    licensorIpId: Address;
+    licenseTermsId: string;
+    amount: number;
+}
+
+export interface AttachTermsParams {
+    ipId: Address;
+    mintingFee: number;
+    commercialUse: boolean;
+    commercialRevShare: number;
 }
 
 // Plugin configuration
@@ -80,20 +92,6 @@ export interface EvmPluginConfig {
         wait?: number;
     };
 }
-
-// LiFi types
-export type LiFiStatus = {
-    status: "PENDING" | "DONE" | "FAILED";
-    substatus?: string;
-    error?: Error;
-};
-
-export type LiFiRoute = {
-    transactionHash: Hash;
-    transactionData: `0x${string}`;
-    toAddress: Address;
-    status: LiFiStatus;
-};
 
 // Provider types
 export interface TokenData extends Token {
