@@ -822,7 +822,17 @@ async function startAgentConversation(
     }
   }
 
-  while (true) {
+  const now = new Date().getTime();
+  // default start date: 2024-12-15 00:00:00
+  const contestStartTimestamp = parseInt(process.env.CONTEST_START_TIMESTAMP || "0");
+  // default end date: 2024-12-18 00:00:00
+  const contestEndTimestamp = parseInt(process.env.CONTEST_END_TIMESTAMP || "0");
+
+  if (contestStartTimestamp === 0 || contestEndTimestamp === 0) {
+    throw new Error("Contest start and end timestamps must be set");
+  }
+
+  while (true && now < contestEndTimestamp && now > contestStartTimestamp) {
     try {
       // Start with Marilyn asking a dating question
       elizaLogger.info("Marilyn starting round table discussion");

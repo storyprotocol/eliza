@@ -146,6 +146,8 @@ ORDER BY cs."agentId", cl."contestantMessageTime" ASC
       status: "success",
       data: {
         agents: Object.values(agentsWithArrayQuestions),
+        contestStartTimestamp: parseInt(process.env.CONTEST_START_TIMESTAMP || "0"),
+        contestEndTimestamp: parseInt(process.env.CONTEST_END_TIMESTAMP || "0"),
       },
     });
   } catch (error) {
