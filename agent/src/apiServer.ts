@@ -1,5 +1,10 @@
+// apiServer.ts
+import dotenv from "dotenv";
+import path from "path";
+
 import express from "express";
 import cors from "cors";
+import corsOptions from "./corsOptions.ts"; // Import the CORS options
 import { fileURLToPath, pathToFileURL } from "url";
 import { dirname } from "path";
 import { elizaLogger } from "@ai16z/eliza";
@@ -7,6 +12,9 @@ import apiRouter from "./api.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Load environment variables from .env file
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 export function startApiServer(port?: number) {
   const app = express();
