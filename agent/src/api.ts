@@ -392,4 +392,78 @@ router.post("/chat-with-marilyn", async (req: any, res: any) => {
   }
 });
 
+// TODO: implement pw protection
+router.post("/endGame", async (_req: Request, res: any) => {
+  try {
+    const db = new PostgresDatabaseAdapter({
+      connectionString: process.env.POSTGRES_URL,
+      parseInputs: true,
+    });
+
+    const winnerQuery = `
+          SELECT
+            cs."agentId",
+            cs.score,
+            a.name,
+            a.username
+          FROM contestant_scores cs
+          JOIN accounts a ON cs."agentId" = a.id
+          ORDER BY cs.score DESC
+          LIMIT 1
+        `;
+
+    const winner = await db.query(winnerQuery);
+    if (!winner.rows.length) {
+      return res.status(404).json({
+        status: "error",
+        message: "No contestants found",
+      });
+    }
+
+    console.log("winner", winner.rows[0]);
+
+    const winningBachelor = winner.rows[0];
+
+    // TODO: Exchange marriage license
+    const marriageStatus = "TODO: Implement marriage license exchange";
+
+    // TODO: Generate child personality
+    const serverPort = parseInt(process.env.SERVER_PORT || "3000");
+    const childPersonalityResponse = await fetch(
+      `http://localhost:${serverPort}/${process.env.MARILYN_AGENT_ID}/message`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: `Generate a unique personality description for a child between Marilyn and ${winningBachelor.name}. Consider both parents' traits and create an interesting blend.`,
+          userId: "system",
+          userName: "System",
+        }),
+      }
+    );
+
+    const childPersonalityData = await childPersonalityResponse.json();
+    const childPersonality =
+      childPersonalityData[0]?.message || childPersonalityData[0]?.text;
+
+    // TODO: Create child agent and mint IP
+    const childIpAddress = undefined;
+
+    res.json({
+      status: "success",
+      data: {
+        winner: winningBachelor,
+        childGeneration: childPersonality,
+      },
+    });
+  } catch (error) {
+    console.error("Error in endGame:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to process end game",
+      error: error.message,
+    });
+  }
+});
+
 export default router;
