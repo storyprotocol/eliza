@@ -26,6 +26,70 @@ const userSessions = new Map<
   }
 >();
 
+router.post("/game/duration", async (req: any, res: any) => {
+  const { startTimestamp, endTimestamp, messagingIntervalSeconds } = req.body;
+
+  if (!startTimestamp || !endTimestamp) {
+    return res.status(400).json({
+      status: "error",
+      message: "startTimestamp and endTimestamp are required"
+    });
+  }
+
+  const db = new PostgresDatabaseAdapter({
+    connectionString: process.env.POSTGRES_URL,
+    parseInputs: true,
+  });
+
+  try {
+    await db.query(
+      `INSERT INTO game_config ("id", "messagingIntervalSeconds", "startTimestamp", "endTimestamp")
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (id) DO UPDATE
+       SET
+       "id" = $1,
+       "messagingIntervalSeconds" = $2,
+       "startTimestamp" = $3,
+        "endTimestamp" = $4`,
+      [process.env.GAME_CONFIG_ID, messagingIntervalSeconds, startTimestamp, endTimestamp]
+    );
+
+    res.json({ status: "success" });
+  } catch (error) {
+    elizaLogger.error("Error inserting game config:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to save game configuration"
+    });
+  }
+});
+
+router.post("/game/restart", async (req: any, res: any) => {
+  const { id } = req.body;
+  try {
+    const db = new PostgresDatabaseAdapter({
+      connectionString: process.env.POSTGRES_URL,
+      parseInputs: true,
+    });
+
+    await db.query(`TRUNCATE TABLE conversation_logs CASCADE`);
+    await db.query(`TRUNCATE TABLE contestant_scores CASCADE`);
+    await db.query(`TRUNCATE TABLE memories CASCADE`);
+    await db.query(`TRUNCATE TABLE relationships CASCADE`);
+    await db.query(`TRUNCATE TABLE participants CASCADE`);
+
+  } catch (error) {
+    elizaLogger.error("Error clearing game data:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to clear game data"
+    });
+  }
+
+
+  res.json({ status: "success" });
+});
+
 router.get("/chat-data", async (req: any, res: any) => {
   try {
     const { startTime, agentName } = req.query;

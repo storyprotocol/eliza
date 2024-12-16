@@ -653,6 +653,44 @@ async function saveAccountStoryMetadata(character: Character, db: IDatabaseAdapt
     elizaLogger.info("Saved account story metadata for agent:", character.id, result);
 }
 
+async function loadGameConfig(db: IDatabaseAdapter & IDatabaseCacheAdapter) {
+    const gameConfig = await (
+        db as PostgresDatabaseAdapter
+    ).query(
+        `SELECT * FROM game_config LIMIT 1`,
+    );
+
+    if (gameConfig.rows.length !== 0) {
+        return {
+            messagingIntervalSeconds: gameConfig.rows[0].messagingIntervalSeconds,
+            startTimestamp: gameConfig.rows[0].startTimestamp,
+            endTimestamp: gameConfig.rows[0].endTimestamp
+        }
+    }
+
+    await (db as PostgresDatabaseAdapter).query(
+        `INSERT INTO game_config ("id", "messagingIntervalSeconds", "startTimestamp", "endTimestamp")
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (id) DO UPDATE
+            SET
+            "id" = $1,
+            "messagingIntervalSeconds" = $2,
+            "startTimestamp" = $3,
+            "endTimestamp" = $4`,
+        [
+            process.env.GAME_CONFIG_ID,
+            process.env.AGENT_MESSAGE_INTERVAL_SECONDS,
+            process.env.CONTEST_START_TIMESTAMP,
+            process.env.CONTEST_END_TIMESTAMP
+        ]
+        );
+        return {
+        messagingIntervalSeconds: process.env.AGENT_MESSAGE_INTERVAL_SECONDS,
+        startTimestamp: process.env.CONTEST_START_TIMESTAMP,
+        endTimestamp: process.env.CONTEST_END_TIMESTAMP
+    }
+}
+
 async function startAgentConversation(
   agents: { id: string; agent: any[]; name: string }[],
   db: IDatabaseAdapter & IDatabaseCacheAdapter,
@@ -822,17 +860,34 @@ async function startAgentConversation(
     }
   }
 
-  const now = new Date().getTime();
-  // default start date: 2024-12-15 00:00:00
-  const contestStartTimestamp = parseInt(process.env.CONTEST_START_TIMESTAMP || "0");
-  // default end date: 2024-12-18 00:00:00
-  const contestEndTimestamp = parseInt(process.env.CONTEST_END_TIMESTAMP || "0");
+  const gameConfig = await (
+    db as PostgresDatabaseAdapter
+  ).query(
+    `SELECT * FROM game_config LIMIT 1`,
+  );
 
-  if (contestStartTimestamp === 0 || contestEndTimestamp === 0) {
-    throw new Error("Contest start and end timestamps must be set");
-  }
 
-  while (true && now < contestEndTimestamp && now > contestStartTimestamp) {
+
+  // initialize a very early last message time so that it will trigger the first round of discussion right away
+  var lastMessageTime = new Date().getTime() - 3600 * 1000;
+
+  while (true) {
+    const now = new Date().getTime();
+    const { startTimestamp, endTimestamp, messagingIntervalSeconds } = await loadGameConfig(db);
+    if (now < startTimestamp || now > endTimestamp) {
+      elizaLogger.info("Contest is not active..");
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      continue;
+    }
+
+    // Wait for the next message time in 5 seconds intervals
+    // this is to ensure that if the messaginIntervalSeconds is changed, we just need to wait for at most 5 seconds
+    if (lastMessageTime + messagingIntervalSeconds * 1000 > now) {
+        elizaLogger.info("Waiting for next message time:", lastMessageTime + messagingIntervalSeconds * 1000 - now);
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        continue;
+    }
+
     try {
       // Start with Marilyn asking a dating question
       elizaLogger.info("Marilyn starting round table discussion");
@@ -899,13 +954,10 @@ async function startAgentConversation(
         elizaLogger.error("Failed to get Marilyn's opening message");
       }
 
-      const waitTime = parseInt(
-        process.env.AGENT_MESSAGE_INTERVAL_SECONDS || "5"
-      );
       elizaLogger.info(
-        `Waiting for next round table discussion: ${waitTime} seconds`
+        `Waiting for next round table discussion: ${messagingIntervalSeconds} seconds`
       );
-      await new Promise((resolve) => setTimeout(resolve, waitTime * 1000));
+      lastMessageTime = new Date().getTime();
     } catch (error) {
       elizaLogger.error("Error in agent conversation:", error);
       await new Promise((resolve) => setTimeout(resolve, 25000));

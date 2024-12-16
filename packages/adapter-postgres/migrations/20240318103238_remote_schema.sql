@@ -769,4 +769,12 @@ ALTER TABLE "accounts" ADD COLUMN "walletPublicKey" VARCHAR;
 ALTER TABLE "accounts" ADD COLUMN "walletPrivateKey" VARCHAR;
 ALTER TABLE "accounts" ADD COLUMN "character" JSONB;
 
+CREATE TABLE IF NOT EXISTS game_config (
+    "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "messagingIntervalSeconds" INTEGER NOT NULL DEFAULT 10,
+    "startTimestamp" TIMESTAMPTZ NOT NULL,
+    "endTimestamp" TIMESTAMPTZ NOT NULL
+);
+
+
 RESET ALL;
