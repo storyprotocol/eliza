@@ -107,6 +107,15 @@ router.get("/chat-data", async (req: any, res: any) => {
       parseInputs: true,
     });
 
+    // read game config
+    const gameConfig = await db.query(`SELECT * FROM game_config WHERE id = $1`, [process.env.GAME_CONFIG_ID]);
+    if (gameConfig.rows.length === 0) {
+      return res.status(400).json({
+        status: "error",
+        message: "Game configuration not found",
+      });
+    }
+
     const query = `
 SELECT
     cs."agentId",
@@ -210,8 +219,9 @@ ORDER BY cs."agentId", cl."contestantMessageTime" ASC
       status: "success",
       data: {
         agents: Object.values(agentsWithArrayQuestions),
-        contestStartTimestamp: parseInt(process.env.CONTEST_START_TIMESTAMP || "0"),
-        contestEndTimestamp: parseInt(process.env.CONTEST_END_TIMESTAMP || "0"),
+        messagingIntervalSeconds: gameConfig.rows[0].messagingIntervalSeconds,
+        contestStartTimestamp: gameConfig.rows[0].startTimestamp,
+        contestEndTimestamp: gameConfig.rows[0].endTimestamp,
       },
     });
   } catch (error) {
