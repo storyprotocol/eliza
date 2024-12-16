@@ -4,6 +4,7 @@
 !api.ts
 !apiServer.ts
 !maincharacter.ts
+!corsOptions.ts
 .env
 *.env
 .env*
