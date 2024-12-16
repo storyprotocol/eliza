@@ -112,6 +112,7 @@ ORDER BY cs."agentId", cl."contestantMessageTime" ASC
           content: row.contestantMessage,
           created_at: row.contestantMessageTime,
           question: row.question,
+          score: row.interactionScore,
         });
 
         if (row.marilynResponse) {
