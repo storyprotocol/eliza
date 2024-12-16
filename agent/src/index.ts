@@ -620,7 +620,7 @@ async function saveAccountStoryMetadata(character: Character, db: IDatabaseAdapt
             agentAvatarUrl = process.env.AGENT3_PICTURE_URL;
             break;
         default:
-            elizaLogger.error("Agent not found:", character.id);
+            elizaLogger.error("Agent not found:", character.id, character.name);
             throw new Error("Agent not found");
     }
 
