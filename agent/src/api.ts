@@ -490,7 +490,6 @@ router.post("/chat-with-marilyn", async (req: any, res: any) => {
   }
 });
 
-// TODO: implement pw protection
 router.post(
   "/game/end",
   authenticateGameEnd,
