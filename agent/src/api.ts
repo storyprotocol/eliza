@@ -285,29 +285,29 @@ router.get("/chat-data", async (req: any, res: any) => {
     );
 
     const response = {
-        status: "success",
-        data: {
-          agents: Object.values(agentsWithArrayQuestions),
-          messagingIntervalSeconds: gameConfig.rows[0].messagingIntervalSeconds,
-          contestStartTimestamp: gameConfig.rows[0].startTimestamp,
-          contestEndTimestamp: gameConfig.rows[0].endTimestamp,
-          nextMessageTimestamp: new Date(
-            new Date(gameConfig.rows[0].lastMessageTime).getTime() +
-              gameConfig.rows[0].messagingIntervalSeconds * 1000
-          ).toISOString(),
-          marilyn: {
-            name: "Marilyn",
-            picture_url: marilynAgent.rows[0].avatarUrl,
-            description: marilynAgent.rows[0].details.description,
-            ipId: marilynAgent.rows[0].ipId,
-            walletAddress: marilynAgent.rows[0].walletAddress,
-            licenseTermId: marilynAgent.rows[0].licenseTermId,
-            licenseTermUri: marilynAgent.rows[0].licenseTermUri,
-            ipRegistrationTxnHash: marilynAgent.rows[0].ipRegistrationTxnHash,
-            character: marilynCharacter,
-          },
+      status: "success",
+      data: {
+        agents: Object.values(agentsWithArrayQuestions),
+        messagingIntervalSeconds: gameConfig.rows[0].messagingIntervalSeconds,
+        contestStartTimestamp: gameConfig.rows[0].startTimestamp,
+        contestEndTimestamp: gameConfig.rows[0].endTimestamp,
+        nextMessageTimestamp: new Date(
+          new Date(gameConfig.rows[0].lastMessageTime).getTime() +
+            gameConfig.rows[0].messagingIntervalSeconds * 1000
+        ).toISOString(),
+        marilyn: {
+          name: "Marilyn",
+          picture_url: marilynAgent.rows[0].avatarUrl,
+          description: marilynAgent.rows[0].details.description,
+          ipId: marilynAgent.rows[0].ipId,
+          walletAddress: marilynAgent.rows[0].walletAddress,
+          licenseTermId: marilynAgent.rows[0].licenseTermId,
+          licenseTermUri: marilynAgent.rows[0].licenseTermUri,
+          ipRegistrationTxnHash: marilynAgent.rows[0].ipRegistrationTxnHash,
+          character: marilynCharacter,
         },
-      } as any;
+      },
+    } as any;
 
     const childAgent = await db.query(`SELECT * FROM accounts WHERE id = $1`, [
       process.env.CHILD_AGENT_ID,
@@ -315,15 +315,15 @@ router.get("/chat-data", async (req: any, res: any) => {
 
     if (childAgent.rows.length !== 0) {
       response.data.child = {
-            name: process.env.CHILD_NAME,
-            picture_url: childAgent.rows[0].avatarUrl,
-            description: childAgent.rows[0].details.description,
-            ipId: childAgent.rows[0].ipId,
-            walletAddress: childAgent.rows[0].walletAddress,
-            licenseTermId: childAgent.rows[0].licenseTermId,
-            licenseTermUri: childAgent.rows[0].licenseTermUri,
-            ipRegistrationTxnHash: childAgent.rows[0].ipRegistrationTxnHash,
-            character: childAgent.rows[0].character,
+        name: process.env.CHILD_NAME,
+        picture_url: childAgent.rows[0].avatarUrl,
+        description: childAgent.rows[0].details.description,
+        ipId: childAgent.rows[0].ipId,
+        walletAddress: childAgent.rows[0].walletAddress,
+        licenseTermId: childAgent.rows[0].licenseTermId,
+        licenseTermUri: childAgent.rows[0].licenseTermUri,
+        ipRegistrationTxnHash: childAgent.rows[0].ipRegistrationTxnHash,
+        character: childAgent.rows[0].character,
       };
     }
 
@@ -534,7 +534,6 @@ router.post(
 
       const winningBachelor = winner.rows[0];
 
-      // TODO: Generate child personality
       const serverPort = parseInt(process.env.SERVER_PORT || "3000");
       const childPersonalityResponse = await fetch(
         `http://localhost:${serverPort}/${winningBachelor.agentId}/child`,
@@ -609,17 +608,22 @@ router.post(
         ON CONFLICT ("id") DO UPDATE
         SET "createdAt" = NOW()`,
         [
-            stringToUuid(process.env.CHILD_NAME),
-            process.env.CHILD_NAME,
-            process.env.CHILD_NAME,
-            `${process.env.CHILD_NAME}@example.com`,
-            character,
-            childIp.ipId,
-            childIp.txHash,
-            process.env.CHILD_WALLET_ADDRESS,
-            process.env.CHILD_WALLET_PUBLIC_KEY,
-            process.env.CHILD_WALLET_PRIVATE_KEY,
+          stringToUuid(process.env.CHILD_NAME),
+          process.env.CHILD_NAME,
+          process.env.CHILD_NAME,
+          `${process.env.CHILD_NAME}@example.com`,
+          character,
+          childIp.ipId,
+          childIp.txHash,
+          process.env.CHILD_WALLET_ADDRESS,
+          process.env.CHILD_WALLET_PUBLIC_KEY,
+          process.env.CHILD_WALLET_PRIVATE_KEY,
         ]
+      );
+
+      await db.query(
+        `UPDATE game_config SET "lastMessageTime" = NULL WHERE id = $1`,
+        [process.env.GAME_CONFIG_ID]
       );
 
       res.json({
