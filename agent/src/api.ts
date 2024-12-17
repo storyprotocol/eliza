@@ -181,40 +181,29 @@ ORDER BY cs."agentId", cl."contestantMessageTime" ASC
         };
       }
       if (row.contestantMessage) {
-        const questionGroup = {
-          question: row.question,
-          exchanges: [],
-        };
-
-        const exchange = [
-          {
-            name: row.username || row.name || agentId,
-            content: row.contestantMessage,
-            created_at: row.contestantMessageTime,
-            score: row.interactionScore,
-          },
-        ];
-
-        if (row.marilynResponse) {
-          exchange.push({
+        if (row.question) {
+          acc[agentId].messages.push({
             name: "marilyn",
-            content: row.marilynResponse,
-            created_at: row.marilynResponseTime,
-            score: 0, // Adding score field for consistency, set to 0 for Marilyn's responses
+            content: row.question,
+            created_at: row.contestantMessageTime,
+            score: 0,
           });
         }
 
-        const existingQuestionIndex = acc[agentId].messages.findIndex(
-          (m: { question: any }) => m.question === row.question
-        );
+        acc[agentId].messages.push({
+          name: row.username || row.name || agentId,
+          content: row.contestantMessage,
+          created_at: row.contestantMessageTime,
+          score: row.interactionScore,
+        });
 
-        if (existingQuestionIndex === -1) {
+        if (row.marilynResponse) {
           acc[agentId].messages.push({
-            ...questionGroup,
-            exchanges: [exchange],
+            name: "marilyn",
+            content: row.marilynResponse,
+            created_at: row.marilynResponseTime,
+            score: 0,
           });
-        } else {
-          acc[agentId].messages[existingQuestionIndex].exchanges.push(exchange);
         }
 
         if (row.question) {
@@ -246,6 +235,10 @@ ORDER BY cs."agentId", cl."contestantMessageTime" ASC
         messagingIntervalSeconds: gameConfig.rows[0].messagingIntervalSeconds,
         contestStartTimestamp: gameConfig.rows[0].startTimestamp,
         contestEndTimestamp: gameConfig.rows[0].endTimestamp,
+        nextMessageTimestamp: new Date(
+          new Date(gameConfig.rows[0].lastMessageTime).getTime() +
+            gameConfig.rows[0].messagingIntervalSeconds * 1000
+        ).toISOString(),
       },
     });
   } catch (error) {
