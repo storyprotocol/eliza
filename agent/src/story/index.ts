@@ -5,8 +5,9 @@ import { licensingModuleAbi, MARRIAGE_LICENSE_TERMS } from './constants'
 import { parseTxLicenseTokensMintedEvent } from './functions/parseTxLicenseTokensMintedEvent'
 import { uploadJSONToIPFS } from './functions/uploadToIpfs'
 import { createHash } from 'crypto'
+import { Character } from '@ai16z/eliza'
 
-export async function getStoryClient(privateKey: Address) {
+export function getStoryClient(privateKey: Address): StoryClient {
     const account: Account = privateKeyToAccount(privateKey)
 
     const config: StoryConfig = {
@@ -61,7 +62,7 @@ export async function mintLicenseToken(account: Account, ipId: Address, childIpI
 }
 
 // must be called by the child wallet
-export async function registerChild(client: StoryClient, characterJson: any, characterImage: string): Promise<RegisterIpResponse> {
+export async function registerChild(client: StoryClient, characterJson: Character, characterImage: string): Promise<RegisterIpResponse> {
     const ipMetadata: IpMetadata = client.ipAsset.generateIpMetadata({
         title: characterJson.name,
         description: characterJson.system,
@@ -86,7 +87,7 @@ export async function registerChild(client: StoryClient, characterJson: any, cha
     const nftHash = createHash('sha256').update(JSON.stringify(nftMetadata)).digest('hex')
 
     const response = await client.ipAsset.mintAndRegisterIp({
-        spgNftContract: '0x09D36f0b24f8CbBfe2cC7d14276d408da7EA4f7d',
+        spgNftContract: process.env.SPG_NFT_COLLECTION_ADDRESS,
         ipMetadata: {
             ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
             ipMetadataHash: `0x${ipHash}`,
