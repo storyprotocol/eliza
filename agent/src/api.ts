@@ -594,6 +594,7 @@ router.post(
       await db.query(
         `INSERT INTO accounts (
             "id",
+            "avatarUrl",
             "name",
             "username",
             "email",
@@ -604,20 +605,21 @@ router.post(
             "walletPublicKey",
             "walletPrivateKey",
             "createdAt"
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
         ON CONFLICT ("id") DO UPDATE
         SET "createdAt" = NOW()`,
         [
-          stringToUuid(process.env.CHILD_NAME),
-          process.env.CHILD_NAME,
-          process.env.CHILD_NAME,
-          `${process.env.CHILD_NAME}@example.com`,
-          character,
-          childIp.ipId,
-          childIp.txHash,
-          process.env.CHILD_WALLET_ADDRESS,
-          process.env.CHILD_WALLET_PUBLIC_KEY,
-          process.env.CHILD_WALLET_PRIVATE_KEY,
+            stringToUuid(process.env.CHILD_NAME),
+            process.env.CHILD_PICTURE_URL,
+            process.env.CHILD_NAME,
+            process.env.CHILD_NAME,
+            `${process.env.CHILD_NAME}@example.com`,
+            character,
+            childIp.ipId,
+            childIp.txHash,
+            process.env.CHILD_WALLET_ADDRESS,
+            process.env.CHILD_WALLET_PUBLIC_KEY,
+            process.env.CHILD_WALLET_PRIVATE_KEY,
         ]
       );
 
