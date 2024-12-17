@@ -553,7 +553,7 @@ router.post(
       const childStoryClent = getStoryClient(
         process.env.CHILD_WALLET_PRIVATE_KEY as Address
       );
-      const childIp = await registerChild(childStoryClent, character, "image");
+      const childIp = await registerChild(childStoryClent, character);
 
       console.log("childIp", childIp);
       console.log("childIpId", childIp.ipId);
