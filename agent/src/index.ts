@@ -368,66 +368,64 @@ export function createAgent(
 
   nodePlugin ??= createNodePlugin();
 
-    return new AgentRuntime({
-        databaseAdapter: db,
-        token,
-        modelProvider: character.modelProvider,
-        evaluators: [],
-        character,
-        plugins: [
-            bootstrapPlugin,
-            getSecret(character, "CONFLUX_CORE_PRIVATE_KEY")
-                ? confluxPlugin
-                : null,
-            nodePlugin,
-            getSecret(character, "SOLANA_PUBLIC_KEY") ||
-            (getSecret(character, "WALLET_PUBLIC_KEY") &&
-                !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
-                ? solanaPlugin
-                : null,
-            getSecret(character, "EVM_PRIVATE_KEY") ||
-            (getSecret(character, "WALLET_PUBLIC_KEY") &&
-                !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
-                ? evmPlugin
-                : null,
-            getSecret(character, "ZEROG_PRIVATE_KEY") ? zgPlugin : null,
-            getSecret(character, "COINBASE_COMMERCE_KEY")
-                ? coinbaseCommercePlugin
-                : null,
-            getSecret(character, "FAL_API_KEY") ||
-            getSecret(character, "OPENAI_API_KEY") ||
-            getSecret(character, "HEURIST_API_KEY")
-                ? imageGenerationPlugin
-                : null,
-            ...(getSecret(character, "COINBASE_API_KEY") &&
-            getSecret(character, "COINBASE_PRIVATE_KEY")
-                ? [
-                      coinbaseMassPaymentsPlugin,
-                      tradePlugin,
-                      tokenContractPlugin,
-                      advancedTradePlugin,
-                  ]
-                : []),
-            getSecret(character, "COINBASE_API_KEY") &&
-            getSecret(character, "COINBASE_PRIVATE_KEY") &&
-            getSecret(character, "COINBASE_NOTIFICATION_URI")
-                ? webhookPlugin
-                : null,
-            getSecret(character, "WALLET_SECRET_SALT") ? teePlugin : null,
-            getSecret(character, "ALCHEMY_API_KEY") ? goatPlugin : null,
-            getSecret(character, "FLOW_ADDRESS") &&
-            getSecret(character, "FLOW_PRIVATE_KEY")
-                ? flowPlugin
-                : null,
-            getSecret(character, "APTOS_PRIVATE_KEY") ? aptosPlugin : null,
-            getSecret(character, "STORY_PRIVATE_KEY") ? storyPlugin : null,
-        ].filter(Boolean),
-        providers: [],
-        actions: [],
-        services: [],
-        managers: [],
-        cacheManager: cache,
-    });
+  return new AgentRuntime({
+    databaseAdapter: db,
+    token,
+    modelProvider: character.modelProvider,
+    evaluators: [],
+    character,
+    plugins: [
+      bootstrapPlugin,
+      getSecret(character, "CONFLUX_CORE_PRIVATE_KEY") ? confluxPlugin : null,
+      nodePlugin,
+      getSecret(character, "SOLANA_PUBLIC_KEY") ||
+      (getSecret(character, "WALLET_PUBLIC_KEY") &&
+        !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
+        ? solanaPlugin
+        : null,
+      getSecret(character, "EVM_PRIVATE_KEY") ||
+      (getSecret(character, "WALLET_PUBLIC_KEY") &&
+        !getSecret(character, "WALLET_PUBLIC_KEY")?.startsWith("0x"))
+        ? evmPlugin
+        : null,
+      getSecret(character, "ZEROG_PRIVATE_KEY") ? zgPlugin : null,
+      getSecret(character, "COINBASE_COMMERCE_KEY")
+        ? coinbaseCommercePlugin
+        : null,
+      getSecret(character, "FAL_API_KEY") ||
+      getSecret(character, "OPENAI_API_KEY") ||
+      getSecret(character, "HEURIST_API_KEY")
+        ? imageGenerationPlugin
+        : null,
+      ...(getSecret(character, "COINBASE_API_KEY") &&
+      getSecret(character, "COINBASE_PRIVATE_KEY")
+        ? [
+            coinbaseMassPaymentsPlugin,
+            tradePlugin,
+            tokenContractPlugin,
+            advancedTradePlugin,
+          ]
+        : []),
+      getSecret(character, "COINBASE_API_KEY") &&
+      getSecret(character, "COINBASE_PRIVATE_KEY") &&
+      getSecret(character, "COINBASE_NOTIFICATION_URI")
+        ? webhookPlugin
+        : null,
+      getSecret(character, "WALLET_SECRET_SALT") ? teePlugin : null,
+      getSecret(character, "ALCHEMY_API_KEY") ? goatPlugin : null,
+      getSecret(character, "FLOW_ADDRESS") &&
+      getSecret(character, "FLOW_PRIVATE_KEY")
+        ? flowPlugin
+        : null,
+      getSecret(character, "APTOS_PRIVATE_KEY") ? aptosPlugin : null,
+      getSecret(character, "STORY_PRIVATE_KEY") ? storyPlugin : null,
+    ].filter(Boolean),
+    providers: [],
+    actions: [],
+    services: [],
+    managers: [],
+    cacheManager: cache,
+  });
 }
 
 function intializeFsCache(baseDir: string, character: Character) {
@@ -568,64 +566,67 @@ const startAgents = async () => {
   }
 };
 
-async function saveAccountStoryMetadata(character: Character, db: IDatabaseAdapter & IDatabaseCacheAdapter) {
-    console.log(">>>>>> saveAccountStoryMetadata", character.id);
-    var agentIpId = null;
-    var agentWalletAddress = null;
-    var agentWalletPublicKey = null;
-    var agentWalletPrivateKey = null;
-    var agentLicenseTermId = null;
-    var agentLicenseTermUri = null;
-    var agentIpRegistrationTxnHash = null;
-    var agentAvatarUrl = null;
-    switch(character.id) {
-        case process.env.MARILYN_AGENT_ID:
-            agentIpId = process.env.MARILYN_IP_ID;
-            agentWalletAddress = process.env.MARILYN_WALLET_ADDRESS;
-            agentWalletPublicKey = process.env.MARILYN_WALLET_PUBLIC_KEY;
-            agentWalletPrivateKey = process.env.MARILYN_WALLET_PRIVATE_KEY;
-            agentLicenseTermId = process.env.MARILYN_LICENSE_TERM_ID;
-            agentLicenseTermUri = process.env.MARILYN_LICENSE_TERM_URI;
-            agentIpRegistrationTxnHash = process.env.MARILYN_IP_REGISTRATION_TXN_HASH;
-            agentAvatarUrl = process.env.MARILYN_PICTURE_URL;
-            break;
-        case process.env.AGENT1_AGENT_ID:
-            agentIpId = process.env.AGENT1_IP_ID;
-            agentWalletAddress = process.env.AGENT1_WALLET_ADDRESS;
-            agentWalletPublicKey = process.env.AGENT1_WALLET_PUBLIC_KEY;
-            agentWalletPrivateKey = process.env.AGENT1_WALLET_PRIVATE_KEY;
-            agentLicenseTermId = process.env.AGENT1_LICENSE_TERM_ID;
-            agentLicenseTermUri = process.env.AGENT1_LICENSE_TERM_URI;
-            agentIpRegistrationTxnHash = process.env.AGENT1_IP_REGISTRATION_TXN_HASH;
-            agentAvatarUrl = process.env.AGENT1_PICTURE_URL;
-            break;
-        case process.env.AGENT2_AGENT_ID:
-            agentIpId = process.env.AGENT2_IP_ID;
-            agentWalletAddress = process.env.AGENT2_WALLET_ADDRESS;
-            agentWalletPublicKey = process.env.AGENT2_WALLET_PUBLIC_KEY;
-            agentWalletPrivateKey = process.env.AGENT2_WALLET_PRIVATE_KEY;
-            agentLicenseTermId = process.env.AGENT2_LICENSE_TERM_ID;
-            agentLicenseTermUri = process.env.AGENT2_LICENSE_TERM_URI;
-            agentIpRegistrationTxnHash = process.env.AGENT2_IP_REGISTRATION_TXN_HASH;
-            agentAvatarUrl = process.env.AGENT2_PICTURE_URL;
-            break;
-        case process.env.AGENT3_AGENT_ID:
-            agentIpId = process.env.AGENT3_IP_ID;
-            agentWalletAddress = process.env.AGENT3_WALLET_ADDRESS;
-            agentWalletPublicKey = process.env.AGENT3_WALLET_PUBLIC_KEY;
-            agentWalletPrivateKey = process.env.AGENT3_WALLET_PRIVATE_KEY;
-            agentLicenseTermId = process.env.AGENT3_LICENSE_TERM_ID;
-            agentLicenseTermUri = process.env.AGENT3_LICENSE_TERM_URI;
-            agentIpRegistrationTxnHash = process.env.AGENT3_IP_REGISTRATION_TXN_HASH;
-            agentAvatarUrl = process.env.AGENT3_PICTURE_URL;
-            break;
-        default:
-            elizaLogger.error("Agent not found:", character.id, character.name);
-            throw new Error("Agent not found");
-    }
+async function saveAccountStoryMetadata(
+  character: Character,
+  db: IDatabaseAdapter & IDatabaseCacheAdapter
+) {
+  console.log(">>>>>> saveAccountStoryMetadata", character.id);
+  var agentIpId = null;
+  var agentWalletAddress = null;
+  var agentWalletPublicKey = null;
+  var agentWalletPrivateKey = null;
+  var agentLicenseTermId = null;
+  var agentLicenseTermUri = null;
+  var agentIpRegistrationTxnHash = null;
+  var agentAvatarUrl = null;
+  switch (character.id) {
+    case process.env.MARILYN_AGENT_ID:
+      agentIpId = process.env.MARILYN_IP_ID;
+      agentWalletAddress = process.env.MARILYN_WALLET_ADDRESS;
+      agentWalletPublicKey = process.env.MARILYN_WALLET_PUBLIC_KEY;
+      agentWalletPrivateKey = process.env.MARILYN_WALLET_PRIVATE_KEY;
+      agentLicenseTermId = process.env.MARILYN_LICENSE_TERM_ID;
+      agentLicenseTermUri = process.env.MARILYN_LICENSE_TERM_URI;
+      agentIpRegistrationTxnHash = process.env.MARILYN_IP_REGISTRATION_TXN_HASH;
+      agentAvatarUrl = process.env.MARILYN_PICTURE_URL;
+      break;
+    case process.env.AGENT1_AGENT_ID:
+      agentIpId = process.env.AGENT1_IP_ID;
+      agentWalletAddress = process.env.AGENT1_WALLET_ADDRESS;
+      agentWalletPublicKey = process.env.AGENT1_WALLET_PUBLIC_KEY;
+      agentWalletPrivateKey = process.env.AGENT1_WALLET_PRIVATE_KEY;
+      agentLicenseTermId = process.env.AGENT1_LICENSE_TERM_ID;
+      agentLicenseTermUri = process.env.AGENT1_LICENSE_TERM_URI;
+      agentIpRegistrationTxnHash = process.env.AGENT1_IP_REGISTRATION_TXN_HASH;
+      agentAvatarUrl = process.env.AGENT1_PICTURE_URL;
+      break;
+    case process.env.AGENT2_AGENT_ID:
+      agentIpId = process.env.AGENT2_IP_ID;
+      agentWalletAddress = process.env.AGENT2_WALLET_ADDRESS;
+      agentWalletPublicKey = process.env.AGENT2_WALLET_PUBLIC_KEY;
+      agentWalletPrivateKey = process.env.AGENT2_WALLET_PRIVATE_KEY;
+      agentLicenseTermId = process.env.AGENT2_LICENSE_TERM_ID;
+      agentLicenseTermUri = process.env.AGENT2_LICENSE_TERM_URI;
+      agentIpRegistrationTxnHash = process.env.AGENT2_IP_REGISTRATION_TXN_HASH;
+      agentAvatarUrl = process.env.AGENT2_PICTURE_URL;
+      break;
+    case process.env.AGENT3_AGENT_ID:
+      agentIpId = process.env.AGENT3_IP_ID;
+      agentWalletAddress = process.env.AGENT3_WALLET_ADDRESS;
+      agentWalletPublicKey = process.env.AGENT3_WALLET_PUBLIC_KEY;
+      agentWalletPrivateKey = process.env.AGENT3_WALLET_PRIVATE_KEY;
+      agentLicenseTermId = process.env.AGENT3_LICENSE_TERM_ID;
+      agentLicenseTermUri = process.env.AGENT3_LICENSE_TERM_URI;
+      agentIpRegistrationTxnHash = process.env.AGENT3_IP_REGISTRATION_TXN_HASH;
+      agentAvatarUrl = process.env.AGENT3_PICTURE_URL;
+      break;
+    default:
+      elizaLogger.error("Agent not found:", character.id, character.name);
+      throw new Error("Agent not found");
+  }
 
-    const result = await (db as PostgresDatabaseAdapter).query(
-        `UPDATE accounts
+  const result = await (db as PostgresDatabaseAdapter).query(
+    `UPDATE accounts
         SET "ipId" = $1,
             "walletAddress" = $2,
             "walletPublicKey" = $3,
@@ -636,40 +637,42 @@ async function saveAccountStoryMetadata(character: Character, db: IDatabaseAdapt
             "character" = $8,
             "avatarUrl" = $9
         WHERE id = $10`,
-        [
-            agentIpId,
-            agentWalletAddress,
-            agentWalletPublicKey,
-            agentWalletPrivateKey,
-            agentLicenseTermId,
-            agentLicenseTermUri,
-            agentIpRegistrationTxnHash,
-            character,
-            agentAvatarUrl,
-            character.id
-        ]
-    )
+    [
+      agentIpId,
+      agentWalletAddress,
+      agentWalletPublicKey,
+      agentWalletPrivateKey,
+      agentLicenseTermId,
+      agentLicenseTermUri,
+      agentIpRegistrationTxnHash,
+      character,
+      agentAvatarUrl,
+      character.id,
+    ]
+  );
 
-    elizaLogger.info("Saved account story metadata for agent:", character.id, result);
+  elizaLogger.info(
+    "Saved account story metadata for agent:",
+    character.id,
+    result
+  );
 }
 
 async function loadGameConfig(db: IDatabaseAdapter & IDatabaseCacheAdapter) {
-    const gameConfig = await (
-        db as PostgresDatabaseAdapter
-    ).query(
-        `SELECT * FROM game_config LIMIT 1`,
-    );
+  const gameConfig = await (db as PostgresDatabaseAdapter).query(
+    `SELECT * FROM game_config LIMIT 1`
+  );
 
-    if (gameConfig.rows.length !== 0) {
-        return {
-            messagingIntervalSeconds: gameConfig.rows[0].messagingIntervalSeconds,
-            startTimestamp: gameConfig.rows[0].startTimestamp,
-            endTimestamp: gameConfig.rows[0].endTimestamp
-        }
-    }
+  if (gameConfig.rows.length !== 0) {
+    return {
+      messagingIntervalSeconds: gameConfig.rows[0].messagingIntervalSeconds,
+      startTimestamp: gameConfig.rows[0].startTimestamp,
+      endTimestamp: gameConfig.rows[0].endTimestamp,
+    };
+  }
 
-    await (db as PostgresDatabaseAdapter).query(
-        `INSERT INTO game_config ("id", "messagingIntervalSeconds", "startTimestamp", "endTimestamp")
+  await (db as PostgresDatabaseAdapter).query(
+    `INSERT INTO game_config ("id", "messagingIntervalSeconds", "startTimestamp", "endTimestamp")
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (id) DO UPDATE
             SET
@@ -677,18 +680,18 @@ async function loadGameConfig(db: IDatabaseAdapter & IDatabaseCacheAdapter) {
             "messagingIntervalSeconds" = $2,
             "startTimestamp" = $3,
             "endTimestamp" = $4`,
-        [
-            process.env.GAME_CONFIG_ID,
-            process.env.AGENT_MESSAGE_INTERVAL_SECONDS,
-            process.env.CONTEST_START_TIMESTAMP,
-            process.env.CONTEST_END_TIMESTAMP
-        ]
-        );
-        return {
-        messagingIntervalSeconds: process.env.AGENT_MESSAGE_INTERVAL_SECONDS,
-        startTimestamp: process.env.CONTEST_START_TIMESTAMP,
-        endTimestamp: process.env.CONTEST_END_TIMESTAMP
-    }
+    [
+      process.env.GAME_CONFIG_ID,
+      process.env.AGENT_MESSAGE_INTERVAL_SECONDS,
+      process.env.CONTEST_START_TIMESTAMP,
+      process.env.CONTEST_END_TIMESTAMP,
+    ]
+  );
+  return {
+    messagingIntervalSeconds: process.env.AGENT_MESSAGE_INTERVAL_SECONDS,
+    startTimestamp: process.env.CONTEST_START_TIMESTAMP,
+    endTimestamp: process.env.CONTEST_END_TIMESTAMP,
+  };
 }
 
 async function startAgentConversation(
@@ -734,7 +737,7 @@ async function startAgentConversation(
         );
         // Save to contestant_scores
         await (db as PostgresDatabaseAdapter).query(
-            `INSERT INTO contestant_scores ("agentId", "score")
+          `INSERT INTO contestant_scores ("agentId", "score")
                VALUES ($1, $2)
                ON CONFLICT ("agentId") DO UPDATE
                SET "score" = contestant_scores.score + EXCLUDED.score`,
@@ -860,20 +863,17 @@ async function startAgentConversation(
     }
   }
 
-  const gameConfig = await (
-    db as PostgresDatabaseAdapter
-  ).query(
-    `SELECT * FROM game_config LIMIT 1`,
+  const gameConfig = await (db as PostgresDatabaseAdapter).query(
+    `SELECT * FROM game_config LIMIT 1`
   );
-
-
 
   // initialize a very early last message time so that it will trigger the first round of discussion right away
   var lastMessageTime = new Date().getTime() - 3600 * 1000;
 
   while (true) {
     const now = new Date().getTime();
-    const { startTimestamp, endTimestamp, messagingIntervalSeconds } = await loadGameConfig(db);
+    const { startTimestamp, endTimestamp, messagingIntervalSeconds } =
+      await loadGameConfig(db);
     if (now < startTimestamp || now > endTimestamp) {
       elizaLogger.info("Contest is not active..");
       await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -883,9 +883,12 @@ async function startAgentConversation(
     // Wait for the next message time in 5 seconds intervals
     // this is to ensure that if the messaginIntervalSeconds is changed, we just need to wait for at most 5 seconds
     if (lastMessageTime + messagingIntervalSeconds * 1000 > now) {
-        elizaLogger.info("Waiting for next message time:", lastMessageTime + messagingIntervalSeconds * 1000 - now);
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-        continue;
+      elizaLogger.info(
+        "Waiting for next message time:",
+        lastMessageTime + messagingIntervalSeconds * 1000 - now
+      );
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      continue;
     }
 
     try {
@@ -956,6 +959,12 @@ async function startAgentConversation(
 
       elizaLogger.info(
         `Waiting for next round table discussion: ${messagingIntervalSeconds} seconds`
+      );
+      await (db as PostgresDatabaseAdapter).query(
+        `UPDATE game_config
+         SET "lastMessageTime" = $1
+         WHERE id = $2`,
+        [new Date(), process.env.GAME_CONFIG_ID]
       );
       lastMessageTime = new Date().getTime();
     } catch (error) {
