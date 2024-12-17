@@ -776,5 +776,7 @@ CREATE TABLE IF NOT EXISTS game_config (
     "endTimestamp" TIMESTAMPTZ NOT NULL
 );
 
+ALTER TABLE game_config
+ADD COLUMN "lastMessageTime" TIMESTAMPTZ;
 
 RESET ALL;

@@ -32,7 +32,7 @@ router.post("/game/duration", async (req: any, res: any) => {
   if (!startTimestamp || !endTimestamp) {
     return res.status(400).json({
       status: "error",
-      message: "startTimestamp and endTimestamp are required"
+      message: "startTimestamp and endTimestamp are required",
     });
   }
 
@@ -51,7 +51,12 @@ router.post("/game/duration", async (req: any, res: any) => {
        "messagingIntervalSeconds" = $2,
        "startTimestamp" = $3,
         "endTimestamp" = $4`,
-      [process.env.GAME_CONFIG_ID, messagingIntervalSeconds, startTimestamp, endTimestamp]
+      [
+        process.env.GAME_CONFIG_ID,
+        messagingIntervalSeconds,
+        startTimestamp,
+        endTimestamp,
+      ]
     );
 
     res.json({ status: "success" });
@@ -59,7 +64,7 @@ router.post("/game/duration", async (req: any, res: any) => {
     elizaLogger.error("Error inserting game config:", error);
     res.status(500).json({
       status: "error",
-      message: "Failed to save game configuration"
+      message: "Failed to save game configuration",
     });
   }
 });
@@ -77,15 +82,13 @@ router.post("/game/restart", async (req: any, res: any) => {
     await db.query(`TRUNCATE TABLE memories CASCADE`);
     await db.query(`TRUNCATE TABLE relationships CASCADE`);
     await db.query(`TRUNCATE TABLE participants CASCADE`);
-
   } catch (error) {
     elizaLogger.error("Error clearing game data:", error);
     return res.status(500).json({
       status: "error",
-      message: "Failed to clear game data"
+      message: "Failed to clear game data",
     });
   }
-
 
   res.json({ status: "success" });
 });
@@ -108,7 +111,10 @@ router.get("/chat-data", async (req: any, res: any) => {
     });
 
     // read game config
-    const gameConfig = await db.query(`SELECT * FROM game_config WHERE id = $1`, [process.env.GAME_CONFIG_ID]);
+    const gameConfig = await db.query(
+      `SELECT * FROM game_config WHERE id = $1`,
+      [process.env.GAME_CONFIG_ID]
+    );
     if (gameConfig.rows.length === 0) {
       return res.status(400).json({
         status: "error",
@@ -174,17 +180,20 @@ ORDER BY cs."agentId", cl."contestantMessageTime" ASC
           questions: new Set(),
         };
       }
-
       if (row.contestantMessage) {
         if (row.question) {
-          acc[agentId].questions.add(row.question);
+          acc[agentId].messages.push({
+            name: "marilyn",
+            content: row.question,
+            created_at: row.contestantMessageTime,
+            score: 0,
+          });
         }
 
         acc[agentId].messages.push({
           name: row.username || row.name || agentId,
           content: row.contestantMessage,
           created_at: row.contestantMessageTime,
-          question: row.question,
           score: row.interactionScore,
         });
 
@@ -193,8 +202,12 @@ ORDER BY cs."agentId", cl."contestantMessageTime" ASC
             name: "marilyn",
             content: row.marilynResponse,
             created_at: row.marilynResponseTime,
-            question: row.question,
+            score: 0,
           });
+        }
+
+        if (row.question) {
+          acc[agentId].questions.add(row.question);
         }
       }
 
@@ -222,6 +235,10 @@ ORDER BY cs."agentId", cl."contestantMessageTime" ASC
         messagingIntervalSeconds: gameConfig.rows[0].messagingIntervalSeconds,
         contestStartTimestamp: gameConfig.rows[0].startTimestamp,
         contestEndTimestamp: gameConfig.rows[0].endTimestamp,
+        nextMessageTimestamp: new Date(
+          new Date(gameConfig.rows[0].lastMessageTime).getTime() +
+            gameConfig.rows[0].messagingIntervalSeconds * 1000
+        ).toISOString(),
       },
     });
   } catch (error) {
@@ -393,7 +410,7 @@ router.post("/chat-with-marilyn", async (req: any, res: any) => {
 });
 
 // TODO: implement pw protection
-router.post("/endGame", async (_req: Request, res: any) => {
+router.post("/game/end", async (_req: Request, res: any) => {
   try {
     const db = new PostgresDatabaseAdapter({
       connectionString: process.env.POSTGRES_URL,
