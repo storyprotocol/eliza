@@ -1,7 +1,7 @@
 {
     "name": "Marilyn",
     "clients": [],
-    "modelProvider": "grok",
+    "modelProvider": "openai",
     "settings": {
         "secrets": {},
         "voice": {

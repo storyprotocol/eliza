@@ -2,9 +2,9 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import express, { Request as ExpressRequest } from "express";
 import multer, { File } from "multer";
-import { elizaLogger, generateCaption, generateImage } from "@ai16z/eliza";
+import {  elizaLogger, generateCaption, generateImage } from "@ai16z/eliza";
 import { composeContext } from "@ai16z/eliza";
-import { generateMessageResponse } from "@ai16z/eliza";
+import { generateObjectResponse, generateMessageResponse } from "@ai16z/eliza";
 import { messageCompletionFooter } from "@ai16z/eliza";
 import { AgentRuntime } from "@ai16z/eliza";
 import {
@@ -19,6 +19,7 @@ import { settings } from "@ai16z/eliza";
 import { createApiRouter } from "./api.ts";
 import * as fs from "fs";
 import * as path from "path";
+
 const upload = multer({ storage: multer.memoryStorage() });
 
 export const messageHandlerTemplate =
@@ -152,19 +153,38 @@ export class DirectClient {
 
                 const context = `Use the following two JSON structure of parents' personalities to generate a unique personality description for a child between Marilyn and ${agent.character.name}. Consider both parents' traits and create an interesting blend. Return the JSON structure following same structure as the example.
 
-                Do not include rating information in the system prompt.
+                The child's name MUST be ${process.env.CHILD_NAME}.
+                Do not include system prompt in the response.
 
                 Marilyn:
                 ${JSON.stringify(marilynAgent.character)}
 
                 ${agent.character.name}:
                 ${JSON.stringify(agent.character)}
+
+                EXAMPLE RESPONSE:
+                {
+                    'name': 'Andrew',
+                    'modelProvider': 'grok',
+                    'settings': { 'secrets': {}, 'voice': { 'model': 'en_US-male-medium' } },
+                    'bio': [],
+                    'lore': [],
+                    'knowledge': [],
+                    'topics': [],
+                    'style': [
+                        'all': [],
+                        'chat': [],
+                        'post': [],
+                    ],
+                    'adjectives': []
+                }
+
                 `;
 
-                const response = await generateMessageResponse({
+                const response = await generateObjectResponse({
                     runtime: marilynAgent,
                     context,
-                    modelClass: ModelClass.MEDIUM,
+                    modelClass: ModelClass.SMALL,
                 });
 
                 res.json(response);
