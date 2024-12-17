@@ -764,6 +764,46 @@ export async function generateObjectArray({
     }
 }
 
+export async function generateObjectResponse({
+    runtime,
+    context,
+    modelClass,
+}: {
+    runtime: IAgentRuntime;
+    context: string;
+    modelClass: string;
+}): Promise<Content> {
+    // elizaLogger.info(">>>> generateMessageResponse:", context);
+    const max_context_length =
+        models[runtime.modelProvider].settings.maxInputTokens;
+    context = trimTokens(context, max_context_length, "gpt-4o");
+    let retryLength = 1000; // exponential backoff
+    while (true) {
+        try {
+            const response = await generateText({
+                runtime,
+                context,
+                modelClass,
+            });
+
+            // try parsing the response as JSON, if null then try again
+            const parsedContent = JSON.parse(response);
+            if (!parsedContent) {
+                elizaLogger.debug("parsedContent is null, retrying");
+                continue;
+            }
+
+            return parsedContent;
+        } catch (error) {
+            elizaLogger.error("ERROR:", error);
+            // wait for 2 seconds
+            retryLength *= 2;
+            await new Promise((resolve) => setTimeout(resolve, retryLength));
+            elizaLogger.debug("Retrying...");
+        }
+    }
+}
+
 /**
  * Send a message to the model for generateText.
  * @param opts - The options for the generateText request.
@@ -797,7 +837,7 @@ export async function generateMessageResponse({
                 context,
                 modelClass,
             });
-
+            console.log(">>>>> response", response);
 
             // try parsing the response as JSON, if null then try again
             const parsedContent = parseJSONObjectFromText(response) as Content;

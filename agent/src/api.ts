@@ -1,6 +1,7 @@
 import express, { Router, Request, Response } from "express";
 import { PostgresDatabaseAdapter } from "@ai16z/adapter-postgres";
-import { elizaLogger } from "@ai16z/eliza";
+import { Character } from "@ai16z/eliza";
+import { elizaLogger, stringToUuid } from "@ai16z/eliza";
 import { v5 as uuidv5 } from "uuid";
 
 const router = Router();
@@ -131,6 +132,15 @@ router.get("/chat-data", async (req: any, res: any) => {
     }
     const marilynCharacter = marilynAgent.rows[0].character;
 
+    const childAgent = await db.query(`SELECT * FROM accounts WHERE id = $1`, [process.env.CHILD_AGENT_ID]);
+    if (childAgent.rows.length === 0) {
+      return res.status(400).json({
+        status: "error",
+        message: "Child agent not found",
+      });
+    }
+    const childCharacter = childAgent.rows[0].character;
+
     const query = `
         SELECT
             cs."agentId",
@@ -259,6 +269,17 @@ router.get("/chat-data", async (req: any, res: any) => {
           licenseTermUri: marilynAgent.rows[0].licenseTermUri,
           ipRegistrationTxnHash: marilynAgent.rows[0].ipRegistrationTxnHash,
           character: marilynCharacter,
+        },
+        child: {
+          name: process.env.CHILD_NAME,
+          picture_url: childAgent.rows[0].avatarUrl,
+          description: childAgent.rows[0].details.description,
+          ipId: childAgent.rows[0].ipId,
+          walletAddress: childAgent.rows[0].walletAddress,
+          licenseTermId: childAgent.rows[0].licenseTermId,
+          licenseTermUri: childAgent.rows[0].licenseTermUri,
+          ipRegistrationTxnHash: childAgent.rows[0].ipRegistrationTxnHash,
+          character: childCharacter,
         },
       },
     });
@@ -477,17 +498,42 @@ router.post("/game/end", async (_req: Request, res: any) => {
 
     const childPersonalityData = await childPersonalityResponse.json();
     console.log("childPersonalityData", childPersonalityData);
-    const childPersonality =
-      childPersonalityData[0]?.message || childPersonalityData[0]?.text;
 
-    // TODO: Create child agent and mint IP
-    const childIpAddress = undefined;
+    const character = childPersonalityData as Character;
+
+
+    // add the user to the accounts table
+    await db.query(
+        `INSERT INTO accounts (
+            "id",
+            "name",
+            "username",
+            "email",
+            "character",
+            "walletAddress",
+            "walletPublicKey",
+            "walletPrivateKey",
+            "createdAt"
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+        ON CONFLICT ("id") DO UPDATE
+        SET "createdAt" = NOW()`,
+        [
+            stringToUuid(process.env.CHILD_NAME),
+            process.env.CHILD_NAME,
+            process.env.CHILD_NAME,
+            `${process.env.CHILD_NAME}@example.com`,
+            character,
+            process.env.CHILD_WALLET_ADDRESS,
+            process.env.CHILD_WALLET_PUBLIC_KEY,
+            process.env.CHILD_WALLET_PRIVATE_KEY,
+        ]
+    );
 
     res.json({
       status: "success",
       data: {
         winner: winningBachelor,
-        childGeneration: childPersonality,
+        childGeneration: childPersonalityData,
       },
     });
   } catch (error) {
