@@ -550,7 +550,7 @@ router.post(
       const character = childPersonalityData as Character;
 
       // register child
-      const childStoryClent = await getStoryClient(
+      const childStoryClent = getStoryClient(
         process.env.CHILD_WALLET_PRIVATE_KEY as Address
       );
       const childIp = await registerChild(childStoryClent, character, "image");
