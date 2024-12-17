@@ -513,7 +513,11 @@ router.post(
             cs."agentId",
             cs.score,
             a.name,
-            a.username
+            a.username,
+            a."ipId",
+            a."walletAddress",
+            a."walletPublicKey",
+            a."walletPrivateKey"
           FROM contestant_scores cs
           JOIN accounts a ON cs."agentId" = a.id
           ORDER BY cs.score DESC
@@ -597,22 +601,26 @@ router.post(
             "username",
             "email",
             "character",
+            "ipId",
+            "ipRegistrationTxnHash",
             "walletAddress",
             "walletPublicKey",
             "walletPrivateKey",
             "createdAt"
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
         ON CONFLICT ("id") DO UPDATE
         SET "createdAt" = NOW()`,
         [
-          stringToUuid(process.env.CHILD_NAME),
-          process.env.CHILD_NAME,
-          process.env.CHILD_NAME,
-          `${process.env.CHILD_NAME}@example.com`,
-          character,
-          process.env.CHILD_WALLET_ADDRESS,
-          process.env.CHILD_WALLET_PUBLIC_KEY,
-          process.env.CHILD_WALLET_PRIVATE_KEY,
+            stringToUuid(process.env.CHILD_NAME),
+            process.env.CHILD_NAME,
+            process.env.CHILD_NAME,
+            `${process.env.CHILD_NAME}@example.com`,
+            character,
+            childIp.ipId,
+            childIp.txHash,
+            process.env.CHILD_WALLET_ADDRESS,
+            process.env.CHILD_WALLET_PUBLIC_KEY,
+            process.env.CHILD_WALLET_PRIVATE_KEY,
         ]
       );
 
