@@ -3,6 +3,14 @@ import { PostgresDatabaseAdapter } from "@ai16z/adapter-postgres";
 import { Character } from "@ai16z/eliza";
 import { elizaLogger, stringToUuid } from "@ai16z/eliza";
 import { v5 as uuidv5 } from "uuid";
+import {
+  getStoryClient,
+  makeChildDerivative,
+  mintLicenseToken,
+  registerChild,
+} from "./story";
+import { Address, Account } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 // Authentication
 const authenticateGameEnd = (
@@ -524,9 +532,6 @@ router.post(
 
       const winningBachelor = winner.rows[0];
 
-      // TODO: Exchange marriage license
-      const marriageStatus = "TODO: Implement marriage license exchange";
-
       // TODO: Generate child personality
       const serverPort = parseInt(process.env.SERVER_PORT || "3000");
       const childPersonalityResponse = await fetch(
@@ -541,6 +546,48 @@ router.post(
       console.log("childPersonalityData", childPersonalityData);
 
       const character = childPersonalityData as Character;
+
+      // register child
+      const childStoryClent = await getStoryClient(
+        process.env.CHILD_WALLET_PRIVATE_KEY as Address
+      );
+      const childIp = await registerChild(childStoryClent, character, "image");
+
+      console.log("childIp", childIp);
+      console.log("childIpId", childIp.ipId);
+      console.log("childTxHash", childIp.txHash);
+
+      // Mint marriage licenses to child
+      const marilynAccount: Account = privateKeyToAccount(
+        process.env.MARILYN_WALLET_PRIVATE_KEY as Address
+      );
+      const marilynLicenseTokenId = await mintLicenseToken(
+        marilynAccount,
+        process.env.MARILYN_IP_ID as Address,
+        childIp.ipId
+      );
+
+      console.log("marilynLicenseTokenId", marilynLicenseTokenId);
+
+      const bachelorAccount: Account = privateKeyToAccount(
+        winningBachelor.walletPrivateKey as Address
+      );
+      const bachelorLicenseTokenId = await mintLicenseToken(
+        bachelorAccount,
+        winningBachelor.ipId as Address,
+        childIp.ipId
+      );
+
+      console.log("bachelorLicenseTokenId", bachelorLicenseTokenId);
+
+      // make child derivative
+      const response = await makeChildDerivative(
+        childStoryClent,
+        childIp.ipId,
+        [marilynLicenseTokenId, bachelorLicenseTokenId]
+      );
+
+      console.log(response);
 
       // add the user to the accounts table
       await db.query(
