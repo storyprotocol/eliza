@@ -1,11 +1,51 @@
-import express, { Router, Request, Response } from "express";
+import express, { Router, Request, Response, NextFunction } from "express";
 import { PostgresDatabaseAdapter } from "@ai16z/adapter-postgres";
 import { Character } from "@ai16z/eliza";
 import { elizaLogger, stringToUuid } from "@ai16z/eliza";
 import { v5 as uuidv5 } from "uuid";
-import { getStoryClient, makeChildDerivative, mintLicenseToken, registerChild } from "./story";
+import {
+  getStoryClient,
+  makeChildDerivative,
+  mintLicenseToken,
+  registerChild,
+} from "./story";
 import { Address, Account } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+
+// Authentication
+const authenticateGameEnd = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({
+      status: "error",
+      message: "Authorization header is required",
+    });
+  }
+
+  // Expected format: "Bearer <password>"
+  const [bearer, password] = authHeader.split(" ");
+
+  if (bearer !== "Bearer" || !password) {
+    return res.status(401).json({
+      status: "error",
+      message: "Invalid authorization format",
+    });
+  }
+
+  if (password !== process.env.GAME_END_PASSWORD) {
+    return res.status(403).json({
+      status: "error",
+      message: "Invalid authorization",
+    });
+  }
+
+  next();
+};
 
 const router = Router();
 
@@ -126,7 +166,10 @@ router.get("/chat-data", async (req: any, res: any) => {
       });
     }
 
-    const marilynAgent = await db.query(`SELECT * FROM accounts WHERE id = $1`, [process.env.MARILYN_AGENT_ID]);
+    const marilynAgent = await db.query(
+      `SELECT * FROM accounts WHERE id = $1`,
+      [process.env.MARILYN_AGENT_ID]
+    );
     if (marilynAgent.rows.length === 0) {
       return res.status(400).json({
         status: "error",
@@ -135,7 +178,9 @@ router.get("/chat-data", async (req: any, res: any) => {
     }
     const marilynCharacter = marilynAgent.rows[0].character;
 
-    const childAgent = await db.query(`SELECT * FROM accounts WHERE id = $1`, [process.env.CHILD_AGENT_ID]);
+    const childAgent = await db.query(`SELECT * FROM accounts WHERE id = $1`, [
+      process.env.CHILD_AGENT_ID,
+    ]);
     if (childAgent.rows.length === 0) {
       return res.status(400).json({
         status: "error",
@@ -235,7 +280,6 @@ router.get("/chat-data", async (req: any, res: any) => {
 
       return acc;
     }, {});
-
 
     const agentsWithArrayQuestions = Object.entries(agents).reduce(
       (
@@ -454,15 +498,17 @@ router.post("/chat-with-marilyn", async (req: any, res: any) => {
   }
 });
 
-// TODO: implement pw protection
-router.post("/game/end", async (_req: Request, res: any) => {
-  try {
-    const db = new PostgresDatabaseAdapter({
-      connectionString: process.env.POSTGRES_URL,
-      parseInputs: true,
-    });
+router.post(
+  "/game/end",
+  authenticateGameEnd,
+  async (_req: Request, res: any) => {
+    try {
+      const db = new PostgresDatabaseAdapter({
+        connectionString: process.env.POSTGRES_URL,
+        parseInputs: true,
+      });
 
-    const winnerQuery = `
+      const winnerQuery = `
           SELECT
             cs."agentId",
             cs.score,
@@ -474,59 +520,77 @@ router.post("/game/end", async (_req: Request, res: any) => {
           LIMIT 1
         `;
 
-    const winner = await db.query(winnerQuery);
-    if (!winner.rows.length) {
-      return res.status(404).json({
-        status: "error",
-        message: "No contestants found",
-      });
-    }
-
-    console.log("winner", winner.rows[0]);
-
-    const winningBachelor = winner.rows[0];
-
-    // TODO: Generate child personality
-    const serverPort = parseInt(process.env.SERVER_PORT || "3000");
-    const childPersonalityResponse = await fetch(
-      `http://localhost:${serverPort}/${winningBachelor.agentId}/child`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const winner = await db.query(winnerQuery);
+      if (!winner.rows.length) {
+        return res.status(404).json({
+          status: "error",
+          message: "No contestants found",
+        });
       }
-    );
 
-    const childPersonalityData = await childPersonalityResponse.json();
-    console.log("childPersonalityData", childPersonalityData);
+      console.log("winner", winner.rows[0]);
 
-    const character = childPersonalityData as Character;
+      const winningBachelor = winner.rows[0];
 
-    // register child
-    const childStoryClent = await getStoryClient(process.env.CHILD_WALLET_PRIVATE_KEY as Address)
-    const childIp = await registerChild(childStoryClent, character, 'image');
+      // TODO: Generate child personality
+      const serverPort = parseInt(process.env.SERVER_PORT || "3000");
+      const childPersonalityResponse = await fetch(
+        `http://localhost:${serverPort}/${winningBachelor.agentId}/child`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
-    console.log("childIp", childIp);
-    console.log("childIpId", childIp.ipId);
-    console.log("childTxHash", childIp.txHash);
+      const childPersonalityData = await childPersonalityResponse.json();
+      console.log("childPersonalityData", childPersonalityData);
 
-    // Mint marriage licenses to child
-    const marilynAccount: Account = privateKeyToAccount(process.env.MARILYN_WALLET_PRIVATE_KEY as Address)
-    const marilynLicenseTokenId = await mintLicenseToken(marilynAccount, process.env.MARILYN_IP_ID as Address, childIp.ipId);
+      const character = childPersonalityData as Character;
 
-    console.log("marilynLicenseTokenId", marilynLicenseTokenId);
+      // register child
+      const childStoryClent = await getStoryClient(
+        process.env.CHILD_WALLET_PRIVATE_KEY as Address
+      );
+      const childIp = await registerChild(childStoryClent, character, "image");
 
-    const bachelorAccount: Account = privateKeyToAccount(winningBachelor.walletPrivateKey as Address)
-    const bachelorLicenseTokenId = await mintLicenseToken(bachelorAccount, winningBachelor.ipId as Address, childIp.ipId);
+      console.log("childIp", childIp);
+      console.log("childIpId", childIp.ipId);
+      console.log("childTxHash", childIp.txHash);
 
-    console.log("bachelorLicenseTokenId", bachelorLicenseTokenId);
+      // Mint marriage licenses to child
+      const marilynAccount: Account = privateKeyToAccount(
+        process.env.MARILYN_WALLET_PRIVATE_KEY as Address
+      );
+      const marilynLicenseTokenId = await mintLicenseToken(
+        marilynAccount,
+        process.env.MARILYN_IP_ID as Address,
+        childIp.ipId
+      );
 
-    // make child derivative
-    const response = await makeChildDerivative(childStoryClent, childIp.ipId, [marilynLicenseTokenId, bachelorLicenseTokenId]);
+      console.log("marilynLicenseTokenId", marilynLicenseTokenId);
 
-    console.log(response);
+      const bachelorAccount: Account = privateKeyToAccount(
+        winningBachelor.walletPrivateKey as Address
+      );
+      const bachelorLicenseTokenId = await mintLicenseToken(
+        bachelorAccount,
+        winningBachelor.ipId as Address,
+        childIp.ipId
+      );
 
-    // add the user to the accounts table
-    await db.query(
+      console.log("bachelorLicenseTokenId", bachelorLicenseTokenId);
+
+      // make child derivative
+      const response = await makeChildDerivative(
+        childStoryClent,
+        childIp.ipId,
+        [marilynLicenseTokenId, bachelorLicenseTokenId]
+      );
+
+      console.log(response);
+
+      // add the user to the accounts table
+      await db.query(
         `INSERT INTO accounts (
             "id",
             "name",
@@ -541,32 +605,33 @@ router.post("/game/end", async (_req: Request, res: any) => {
         ON CONFLICT ("id") DO UPDATE
         SET "createdAt" = NOW()`,
         [
-            stringToUuid(process.env.CHILD_NAME),
-            process.env.CHILD_NAME,
-            process.env.CHILD_NAME,
-            `${process.env.CHILD_NAME}@example.com`,
-            character,
-            process.env.CHILD_WALLET_ADDRESS,
-            process.env.CHILD_WALLET_PUBLIC_KEY,
-            process.env.CHILD_WALLET_PRIVATE_KEY,
+          stringToUuid(process.env.CHILD_NAME),
+          process.env.CHILD_NAME,
+          process.env.CHILD_NAME,
+          `${process.env.CHILD_NAME}@example.com`,
+          character,
+          process.env.CHILD_WALLET_ADDRESS,
+          process.env.CHILD_WALLET_PUBLIC_KEY,
+          process.env.CHILD_WALLET_PRIVATE_KEY,
         ]
-    );
+      );
 
-    res.json({
-      status: "success",
-      data: {
-        winner: winningBachelor,
-        childGeneration: childPersonalityData,
-      },
-    });
-  } catch (error) {
-    console.error("Error in endGame:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to process end game",
-      error: error.message,
-    });
+      res.json({
+        status: "success",
+        data: {
+          winner: winningBachelor,
+          childGeneration: childPersonalityData,
+        },
+      });
+    } catch (error) {
+      console.error("Error in endGame:", error);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to process end game",
+        error: error.message,
+      });
+    }
   }
-});
+);
 
 export default router;
