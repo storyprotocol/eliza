@@ -447,19 +447,15 @@ router.post("/game/end", async (_req: Request, res: any) => {
     // TODO: Generate child personality
     const serverPort = parseInt(process.env.SERVER_PORT || "3000");
     const childPersonalityResponse = await fetch(
-      `http://localhost:${serverPort}/${process.env.MARILYN_AGENT_ID}/message`,
+      `http://localhost:${serverPort}/${winningBachelor.agentId}/child`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: `Generate a unique personality description for a child between Marilyn and ${winningBachelor.name}. Consider both parents' traits and create an interesting blend.`,
-          userId: "system",
-          userName: "System",
-        }),
       }
     );
 
     const childPersonalityData = await childPersonalityResponse.json();
+    console.log("childPersonalityData", childPersonalityData);
     const childPersonality =
       childPersonalityData[0]?.message || childPersonalityData[0]?.text;
 
