@@ -62,7 +62,7 @@ export async function mintLicenseToken(account: Account, ipId: Address, childIpI
 }
 
 // must be called by the child wallet
-export async function registerChild(client: StoryClient, characterJson: Character, characterImage: string): Promise<RegisterIpResponse> {
+export async function registerChild(client: StoryClient, characterJson: Character): Promise<RegisterIpResponse> {
     const ipMetadata: IpMetadata = client.ipAsset.generateIpMetadata({
         title: characterJson.name,
         description: characterJson.system,
@@ -77,7 +77,7 @@ export async function registerChild(client: StoryClient, characterJson: Characte
 
     const nftMetadata = {
         description: `NFT representing ownership of ${characterJson.name}`,
-        image: characterImage,
+        image: 'https://i.imgur.com/UnfNgyJ.png',
         ...characterJson
     }
 
