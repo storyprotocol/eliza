@@ -122,36 +122,45 @@ router.get("/chat-data", async (req: any, res: any) => {
       });
     }
 
+    const marilynAgent = await db.query(`SELECT * FROM accounts WHERE id = $1`, [process.env.MARILYN_AGENT_ID]);
+    if (marilynAgent.rows.length === 0) {
+      return res.status(400).json({
+        status: "error",
+        message: "Marilyn agent not found",
+      });
+    }
+    const marilynCharacter = marilynAgent.rows[0].character;
+
     const query = `
-SELECT
-    cs."agentId",
-    cs.score as cumulative_score,
-    cl."contestantMessage",
-    cl."marilynResponse",
-    cl."contestantMessageTime",
-    cl."marilynResponseTime",
-    cl."interactionScore",
-    cl."question",
-    a.name,
-    a.username,
-    a."avatarUrl",
-    a.details,
-    a."ipId",
-    a."walletAddress",
-    a."walletPublicKey",
-    a."walletPrivateKey",
-    a."licenseTermId",
-    a."licenseTermUri",
-    a."ipRegistrationTxnHash",
-    a."character"
-FROM contestant_scores cs
-LEFT JOIN conversation_logs cl ON cs."agentId" = cl."agentId"
-LEFT JOIN accounts a ON cs."agentId"::text = a.id::text
-WHERE cl."contestantMessageTime" >= $1
-AND cl."contestantMessageTime" <= $2
-${agentName ? "AND a.name = $3" : ""}
-ORDER BY cs."agentId", cl."contestantMessageTime" ASC
-`;
+        SELECT
+            cs."agentId",
+            cs.score as cumulative_score,
+            cl."contestantMessage",
+            cl."marilynResponse",
+            cl."contestantMessageTime",
+            cl."marilynResponseTime",
+            cl."interactionScore",
+            cl."question",
+            a.name,
+            a.username,
+            a."avatarUrl",
+            a.details,
+            a."ipId",
+            a."walletAddress",
+            a."walletPublicKey",
+            a."walletPrivateKey",
+            a."licenseTermId",
+            a."licenseTermUri",
+            a."ipRegistrationTxnHash",
+            a."character"
+        FROM contestant_scores cs
+        LEFT JOIN conversation_logs cl ON cs."agentId" = cl."agentId"
+        LEFT JOIN accounts a ON cs."agentId"::text = a.id::text
+        WHERE cl."contestantMessageTime" >= $1
+        AND cl."contestantMessageTime" <= $2
+        ${agentName ? "AND a.name = $3" : ""}
+        ORDER BY cs."agentId", cl."contestantMessageTime" ASC
+    `;
 
     const params = agentName
       ? [startTime, endTime, agentName]
@@ -214,6 +223,7 @@ ORDER BY cs."agentId", cl."contestantMessageTime" ASC
       return acc;
     }, {});
 
+
     const agentsWithArrayQuestions = Object.entries(agents).reduce(
       (
         acc: { [key: string]: AgentData },
@@ -239,6 +249,17 @@ ORDER BY cs."agentId", cl."contestantMessageTime" ASC
           new Date(gameConfig.rows[0].lastMessageTime).getTime() +
             gameConfig.rows[0].messagingIntervalSeconds * 1000
         ).toISOString(),
+        marilyn: {
+          name: "Marilyn",
+          picture_url: marilynAgent.rows[0].avatarUrl,
+          description: marilynAgent.rows[0].details.description,
+          ipId: marilynAgent.rows[0].ipId,
+          walletAddress: marilynAgent.rows[0].walletAddress,
+          licenseTermId: marilynAgent.rows[0].licenseTermId,
+          licenseTermUri: marilynAgent.rows[0].licenseTermUri,
+          ipRegistrationTxnHash: marilynAgent.rows[0].ipRegistrationTxnHash,
+          character: marilynCharacter,
+        },
       },
     });
   } catch (error) {
@@ -447,19 +468,15 @@ router.post("/game/end", async (_req: Request, res: any) => {
     // TODO: Generate child personality
     const serverPort = parseInt(process.env.SERVER_PORT || "3000");
     const childPersonalityResponse = await fetch(
-      `http://localhost:${serverPort}/${process.env.MARILYN_AGENT_ID}/message`,
+      `http://localhost:${serverPort}/${winningBachelor.agentId}/child`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: `Generate a unique personality description for a child between Marilyn and ${winningBachelor.name}. Consider both parents' traits and create an interesting blend.`,
-          userId: "system",
-          userName: "System",
-        }),
       }
     );
 
     const childPersonalityData = await childPersonalityResponse.json();
+    console.log("childPersonalityData", childPersonalityData);
     const childPersonality =
       childPersonalityData[0]?.message || childPersonalityData[0]?.text;
 

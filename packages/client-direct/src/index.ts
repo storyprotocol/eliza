@@ -133,6 +133,45 @@ export class DirectClient {
         );
 
         this.app.post(
+            "/:agentId/child",
+            async (req: express.Request, res: express.Response) => {
+                const agentId = req.params.agentId;
+                const agent = this.agents.get(agentId);
+                if (!agent) {
+                    res.status(404).send("Agent not found");
+                    return;
+                }
+
+                const marilynAgentId = process.env.MARILYN_AGENT_ID;
+                const marilynAgent = this.agents.get(marilynAgentId);
+                if (!marilynAgent) {
+                    res.status(404).send("Agent not found");
+                    return;
+                }
+
+
+                const context = `Use the following two JSON structure of parents' personalities to generate a unique personality description for a child between Marilyn and ${agent.character.name}. Consider both parents' traits and create an interesting blend. Return the JSON structure following same structure as the example.
+
+                Do not include rating information in the system prompt.
+
+                Marilyn:
+                ${JSON.stringify(marilynAgent.character)}
+
+                ${agent.character.name}:
+                ${JSON.stringify(agent.character)}
+                `;
+
+                const response = await generateMessageResponse({
+                    runtime: marilynAgent,
+                    context,
+                    modelClass: ModelClass.MEDIUM,
+                });
+
+                res.json(response);
+            }
+        );
+
+        this.app.post(
             "/:agentId/message",
             async (req: express.Request, res: express.Response) => {
                 const agentId = req.params.agentId;
