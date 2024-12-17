@@ -178,17 +178,6 @@ router.get("/chat-data", async (req: any, res: any) => {
     }
     const marilynCharacter = marilynAgent.rows[0].character;
 
-    const childAgent = await db.query(`SELECT * FROM accounts WHERE id = $1`, [
-      process.env.CHILD_AGENT_ID,
-    ]);
-    if (childAgent.rows.length === 0) {
-      return res.status(400).json({
-        status: "error",
-        message: "Child agent not found",
-      });
-    }
-    const childCharacter = childAgent.rows[0].character;
-
     const query = `
         SELECT
             cs."agentId",
@@ -295,41 +284,50 @@ router.get("/chat-data", async (req: any, res: any) => {
       {}
     );
 
-    res.json({
-      status: "success",
-      data: {
-        agents: Object.values(agentsWithArrayQuestions),
-        messagingIntervalSeconds: gameConfig.rows[0].messagingIntervalSeconds,
-        contestStartTimestamp: gameConfig.rows[0].startTimestamp,
-        contestEndTimestamp: gameConfig.rows[0].endTimestamp,
-        nextMessageTimestamp: new Date(
-          new Date(gameConfig.rows[0].lastMessageTime).getTime() +
-            gameConfig.rows[0].messagingIntervalSeconds * 1000
-        ).toISOString(),
-        marilyn: {
-          name: "Marilyn",
-          picture_url: marilynAgent.rows[0].avatarUrl,
-          description: marilynAgent.rows[0].details.description,
-          ipId: marilynAgent.rows[0].ipId,
-          walletAddress: marilynAgent.rows[0].walletAddress,
-          licenseTermId: marilynAgent.rows[0].licenseTermId,
-          licenseTermUri: marilynAgent.rows[0].licenseTermUri,
-          ipRegistrationTxnHash: marilynAgent.rows[0].ipRegistrationTxnHash,
-          character: marilynCharacter,
+    const response = {
+        status: "success",
+        data: {
+          agents: Object.values(agentsWithArrayQuestions),
+          messagingIntervalSeconds: gameConfig.rows[0].messagingIntervalSeconds,
+          contestStartTimestamp: gameConfig.rows[0].startTimestamp,
+          contestEndTimestamp: gameConfig.rows[0].endTimestamp,
+          nextMessageTimestamp: new Date(
+            new Date(gameConfig.rows[0].lastMessageTime).getTime() +
+              gameConfig.rows[0].messagingIntervalSeconds * 1000
+          ).toISOString(),
+          marilyn: {
+            name: "Marilyn",
+            picture_url: marilynAgent.rows[0].avatarUrl,
+            description: marilynAgent.rows[0].details.description,
+            ipId: marilynAgent.rows[0].ipId,
+            walletAddress: marilynAgent.rows[0].walletAddress,
+            licenseTermId: marilynAgent.rows[0].licenseTermId,
+            licenseTermUri: marilynAgent.rows[0].licenseTermUri,
+            ipRegistrationTxnHash: marilynAgent.rows[0].ipRegistrationTxnHash,
+            character: marilynCharacter,
+          },
         },
-        child: {
-          name: process.env.CHILD_NAME,
-          picture_url: childAgent.rows[0].avatarUrl,
-          description: childAgent.rows[0].details.description,
-          ipId: childAgent.rows[0].ipId,
-          walletAddress: childAgent.rows[0].walletAddress,
-          licenseTermId: childAgent.rows[0].licenseTermId,
-          licenseTermUri: childAgent.rows[0].licenseTermUri,
-          ipRegistrationTxnHash: childAgent.rows[0].ipRegistrationTxnHash,
-          character: childCharacter,
-        },
-      },
-    });
+      } as any;
+
+    const childAgent = await db.query(`SELECT * FROM accounts WHERE id = $1`, [
+      process.env.CHILD_AGENT_ID,
+    ]);
+
+    if (childAgent.rows.length !== 0) {
+      response.data.child = {
+            name: process.env.CHILD_NAME,
+            picture_url: childAgent.rows[0].avatarUrl,
+            description: childAgent.rows[0].details.description,
+            ipId: childAgent.rows[0].ipId,
+            walletAddress: childAgent.rows[0].walletAddress,
+            licenseTermId: childAgent.rows[0].licenseTermId,
+            licenseTermUri: childAgent.rows[0].licenseTermUri,
+            ipRegistrationTxnHash: childAgent.rows[0].ipRegistrationTxnHash,
+            character: childAgent.rows[0].character,
+      };
+    }
+
+    res.json(response);
   } catch (error) {
     console.error("Error fetching chat data:", error);
     res.status(500).json({
