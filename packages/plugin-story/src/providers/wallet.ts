@@ -56,7 +56,7 @@ export class WalletProvider {
             // @ts-ignore
             account: account as Account,
             // @ts-ignore
-            transport: hwttp(DEFAULT_CHAIN_CONFIGS.odyssey.rpcUrl) as Transport,
+            transport: http(DEFAULT_CHAIN_CONFIGS.odyssey.rpcUrl) as Transport,
             chainId: "odyssey",
         };
         this.storyClient = StoryClient.newClient(config);

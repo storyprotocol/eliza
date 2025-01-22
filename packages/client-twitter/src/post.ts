@@ -27,6 +27,9 @@ import {
 } from "discord.js";
 import { State } from "@elizaos/core";
 import { ActionResponse } from "@elizaos/core";
+import { finetuneInference } from "./functions/finetuneInference.ts";
+import { getInference } from "./functions/getInference.ts";
+import { convertImageUrlToBase64 } from "./functions/convertImageUrlToBase64.ts";
 
 const MAX_TIMELINES_TO_FETCH = 15;
 
@@ -384,7 +387,8 @@ export class TwitterPostClient {
                 return await this.sendStandardTweet(
                     client,
                     truncateContent,
-                    tweetId
+                    tweetId,
+                    null
                 );
             } else {
                 return noteTweetResult.data.notetweet_create.tweet_results
@@ -398,12 +402,30 @@ export class TwitterPostClient {
     async sendStandardTweet(
         client: ClientBase,
         content: string,
-        tweetId?: string
+        tweetId?: string,
+        imageBase64Data?: string
     ) {
+        console.log("sending  A STANDARD TWEET", content);
+        // Remove the data:image/png;base64 prefix if it exists
+        let imageBuffer = null;
+        if (imageBase64Data) {
+            const base64Image = imageBase64Data.replace(
+                /^data:image\/\w+;base64,/,
+                ""
+            );
+
+            // Create a buffer from the base64 string
+            imageBuffer = Buffer.from(base64Image, "base64");
+        }
         try {
             const standardTweetResult = await client.requestQueue.add(
                 async () =>
-                    await client.twitterClient.sendTweet(content, tweetId)
+                    await client.twitterClient.sendTweet(content, tweetId, [
+                        {
+                            data: imageBuffer,
+                            mediaType: "image/png",
+                        },
+                    ])
             );
             const body = await standardTweetResult.json();
             if (!body?.data?.create_tweet?.tweet_results?.result) {
@@ -423,7 +445,8 @@ export class TwitterPostClient {
         cleanedContent: string,
         roomId: UUID,
         newTweetContent: string,
-        twitterUsername: string
+        twitterUsername: string,
+        imageBase64Data?: string
     ) {
         try {
             elizaLogger.log(`Posting new tweet:\n`);
@@ -433,7 +456,12 @@ export class TwitterPostClient {
             if (cleanedContent.length > DEFAULT_MAX_TWEET_LENGTH) {
                 result = await this.handleNoteTweet(client, cleanedContent);
             } else {
-                result = await this.sendStandardTweet(client, cleanedContent);
+                result = await this.sendStandardTweet(
+                    client,
+                    cleanedContent,
+                    null,
+                    imageBase64Data
+                );
             }
 
             const tweet = this.createTweetObject(
@@ -497,10 +525,21 @@ export class TwitterPostClient {
 
             elizaLogger.debug("generate post prompt:\n" + context);
 
+            const IMAGE_SYSTEM_PROMPT = `You create product design mockups in the blockchain/crypto space. Your output should be very concise, with a maximum of 3 sentences. Your output should only contain the description of the mockup, but NOT an instruction like "create an image that..."`;
+
+            const IMAGE_PROMPT_INPUT = `Come up with random product design mockups for crypto/blockchain applications. Some ideas include an improvement to a crypto wallet, marketplace, NFT, or really any concept, but I would stay away from smart contracts. Here are some example outputs, which should be very similar to what you output. Note that I only want you to output one, not multiple options:
+1. "swapping with ai doesn't always have to be in a chat"
+2. "LLMs are like athletes. there isn't necessarily an absolute "best". they each have their specializations, strengths and weaknesses. so when you think about AI in the context of your wallet, you should have a choice based on your intent."
+3. "choose a model in your wallet"
+4. "can tokens replace tolls?"
+5. "LLMs that give context on hover"
+6. "listing nfts is hard. ai can fix it. it can also make things like dynamic listings possible."`;
+
             const newTweetContent = await generateText({
                 runtime: this.runtime,
-                context,
-                modelClass: ModelClass.SMALL,
+                context: IMAGE_PROMPT_INPUT,
+                modelClass: ModelClass.MEDIUM,
+                customSystemPrompt: IMAGE_SYSTEM_PROMPT,
             });
 
             // First attempt to clean content
@@ -553,6 +592,25 @@ export class TwitterPostClient {
             // Final cleaning
             cleanedContent = removeQuotes(fixNewLines(cleanedContent));
 
+            // FINAL TEXT CONTENT ^
+            // generate the image now
+            const inference = await finetuneInference(
+                "f219feed-2eca-4e34-b857-ce3d809b761a",
+                "Create an image that showcases an iPhone, laptop, or specific application product design mockup with the following theme: " +
+                    cleanedContent
+            );
+            let inferenceData = await getInference(inference.id);
+            while (inferenceData.status != "Ready") {
+                console.log("Waiting for inference to complete...");
+                // wait 10 seconds
+                await new Promise((resolve) => setTimeout(resolve, 10000));
+                inferenceData = await getInference(inference.id);
+            }
+
+            const image = await convertImageUrlToBase64(
+                inferenceData.result.sample
+            );
+
             if (this.isDryRun) {
                 elizaLogger.info(
                     `Dry run: would have posted tweet: ${cleanedContent}`
@@ -580,7 +638,8 @@ export class TwitterPostClient {
                         cleanedContent,
                         roomId,
                         newTweetContent,
-                        this.twitterUsername
+                        this.twitterUsername,
+                        image
                     );
                 }
             } catch (error) {
@@ -1173,7 +1232,8 @@ export class TwitterPostClient {
                 result = await this.sendStandardTweet(
                     this.client,
                     replyText,
-                    tweet.id
+                    tweet.id,
+                    null
                 );
             }
 
