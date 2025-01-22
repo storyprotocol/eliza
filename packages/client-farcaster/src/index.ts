@@ -1,4 +1,4 @@
-import { Client, IAgentRuntime, elizaLogger } from "@ai16z/eliza";
+import { Client, IAgentRuntime, elizaLogger } from "@elizaos/core";
 import { FarcasterClient } from "./client";
 import { FarcasterPostManager } from "./post";
 import { FarcasterInteractionManager } from "./interactions";
@@ -38,7 +38,7 @@ export class FarcasterAgentClient implements Client {
                 cache,
             });
 
-        elizaLogger.info("Farcaster Neynar client initialized.")
+        elizaLogger.info("Farcaster Neynar client initialized.");
 
         this.posts = new FarcasterPostManager(
             this.client,

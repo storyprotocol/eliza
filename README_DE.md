@@ -6,55 +6,55 @@
 
 <div align="center">
 
-  📖 [Dokumentation](https://ai16z.github.io/eliza/) | 🎯 [Beispiele](https://github.com/thejoven/awesome-eliza)
+📖 [Dokumentation](https://elizaos.github.io/eliza/) | 🎯 [Beispiele](https://github.com/thejoven/awesome-eliza)
 
 </div>
 
 ## ✨ Funktionen
 
--   🛠️ Voll ausgestattete Konnektoren für Discord, Twitter und Telegram
--   👥 Multi-Agenten- und Raumunterstützung
--   📚 Einfache Verarbeitung und Interaktion mit deinen Dokumenten
--   💾 Abrufbarer Speicher und Dokumentenspeicher
--   🚀 Hochgradig erweiterbar – erstelle deine eigenen Aktionen und Clients
--   ☁️ Unterstützt viele Modelle (lokales Llama, OpenAI, Anthropic, Groq usw.)
--   📦 Einfach funktionsfähig!
+- 🛠️ Voll ausgestattete Konnektoren für Discord, Twitter und Telegram
+- 👥 Multi-Agenten- und Raumunterstützung
+- 📚 Einfache Verarbeitung und Interaktion mit deinen Dokumenten
+- 💾 Abrufbarer Speicher und Dokumentenspeicher
+- 🚀 Hochgradig erweiterbar – erstelle deine eigenen Aktionen und Clients
+- ☁️ Unterstützt viele Modelle (lokales Llama, OpenAI, Anthropic, Groq usw.)
+- 📦 Einfach funktionsfähig!
 
 ## 🎯 Anwendungsfälle
 
--   🤖 Chatbots
--   🕵️ Autonome Agenten
--   📈 Geschäftsprozessmanagement
--   🎮 NPCs in Videospielen
--   🧠 Handel
+- 🤖 Chatbots
+- 🕵️ Autonome Agenten
+- 📈 Geschäftsprozessmanagement
+- 🎮 NPCs in Videospielen
+- 🧠 Handel
 
 ## 🚀 Schnelleinstieg
 
 ### Voraussetzungen
 
--   [Python 2.7+](https://www.python.org/downloads/)
--   [Node.js 23+](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
--   [pnpm](https://pnpm.io/installation)
+- [Python 2.7+](https://www.python.org/downloads/)
+- [Node.js 23+](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
+- [pnpm](https://pnpm.io/installation)
 
 > **Hinweis für Windows-Benutzer:** [WSL 2](https://learn.microsoft.com/de-de/windows/wsl/install-manual) ist erforderlich.
 
 ### Nutzung des Starters (Empfohlen)
 
 ```bash
-git clone https://github.com/ai16z/eliza-starter.git
+git clone https://github.com/elizaos/eliza-starter.git
 
 cp .env.example .env
 
 pnpm i && pnpm start
 ```
 
-Lies dann die [Dokumentation](https://ai16z.github.io/eliza/), um zu erfahren, wie du Eliza anpassen kannst.
+Lies dann die [Dokumentation](https://elizaos.github.io/eliza/), um zu erfahren, wie du Eliza anpassen kannst.
 
 ### Manuelles Starten von Eliza (Nur empfohlen, wenn du genau weißt, was du tust)
 
 ```bash
 # Repository klonen
-git clone https://github.com/ai16z/eliza.git
+git clone https://github.com/elizaos/eliza.git
 
 # Wechsle zur neuesten Version
 # Dieses Projekt entwickelt sich schnell weiter, daher empfehlen wir, die neueste Version zu verwenden
@@ -63,7 +63,7 @@ git checkout $(git describe --tags --abbrev=0)
 
 ### Eliza mit Gitpod starten
 
-[![In Gitpod öffnen](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/ai16z/eliza/tree/main)
+[![In Gitpod öffnen](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/elizaos/eliza/tree/main)
 
 ### Bearbeite die .env-Datei
 
@@ -85,12 +85,12 @@ sh scripts/start.sh
 
 ### Charakterdatei bearbeiten
 
-1. Öffne  `agent/src/character.ts`, um den Standardcharakter zu bearbeiten. Kommentiere und bearbeite ihn.
+1. Öffne `agent/src/character.ts`, um den Standardcharakter zu bearbeiten. Kommentiere und bearbeite ihn.
 
 2. Um benutzerdefinierte Charaktere zu laden:
     - Verwende `pnpm start --characters="path/to/your/character.json"`
     - Mehrere Charakterdateien können gleichzeitig geladen werden.
-3. Verbinde mit  X (Twitter)
+3. Verbinde mit X (Twitter)
     - Ändere `"clients": []` zu `"clients": ["twitter"]` in der Charakterdatei, um eine Verbindung mit X herzustellen.
 
 ### Eliza manuell starten
@@ -114,15 +114,15 @@ pnpm install --include=optional sharp
 
 ### Community & Kontakt
 
--   [GitHub Issues](https://github.com/ai16z/eliza/issues). Am besten geeignet für: Bugs, die du bei der Nutzung von Eliza findest, und Feature-Vorschläge.
--   [Discord](https://discord.gg/ai16z). Am besten geeignet für: das Teilen deiner Anwendungen und den Austausch mit der Community.
+- [GitHub Issues](https://github.com/elizaos/eliza/issues). Am besten geeignet für: Bugs, die du bei der Nutzung von Eliza findest, und Feature-Vorschläge.
+- [Discord](https://discord.gg/ai16z). Am besten geeignet für: das Teilen deiner Anwendungen und den Austausch mit der Community.
 
 ## Contributors
 
-<a href="https://github.com/ai16z/eliza/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ai16z/eliza" />
+<a href="https://github.com/elizaos/eliza/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=elizaos/eliza" />
 </a>
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=ai16z/eliza&type=Date)](https://star-history.com/#ai16z/eliza&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=elizaos/eliza&type=Date)](https://star-history.com/#elizaos/eliza&Date)

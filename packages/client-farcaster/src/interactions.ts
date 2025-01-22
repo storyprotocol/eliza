@@ -9,7 +9,7 @@ import {
     HandlerCallback,
     Content,
     type IAgentRuntime,
-} from "@ai16z/eliza";
+} from "@elizaos/core";
 import type { FarcasterClient } from "./client";
 import { toHex } from "viem";
 import { buildConversationThread, createCastMemory } from "./memory";

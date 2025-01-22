@@ -1,4 +1,4 @@
-[@ai16z/eliza v0.1.5-alpha.3](../index.md) / Client
+[@elizaos/core v0.1.7](../index.md) / Client
 
 # Type Alias: Client
 
@@ -10,13 +10,13 @@ Client interface for platform connections
 
 ### start()
 
-> **start**: (`runtime`?) => `Promise`\<`unknown`\>
+> **start**: (`runtime`) => `Promise`\<`unknown`\>
 
 Start client connection
 
 #### Parameters
 
-• **runtime?**: [`IAgentRuntime`](../interfaces/IAgentRuntime.md)
+• **runtime**: [`IAgentRuntime`](../interfaces/IAgentRuntime.md)
 
 #### Returns
 
@@ -24,13 +24,13 @@ Start client connection
 
 ### stop()
 
-> **stop**: (`runtime`?) => `Promise`\<`unknown`\>
+> **stop**: (`runtime`) => `Promise`\<`unknown`\>
 
 Stop client connection
 
 #### Parameters
 
-• **runtime?**: [`IAgentRuntime`](../interfaces/IAgentRuntime.md)
+• **runtime**: [`IAgentRuntime`](../interfaces/IAgentRuntime.md)
 
 #### Returns
 
@@ -38,4 +38,4 @@ Stop client connection
 
 ## Defined in
 
-[packages/core/src/types.ts:563](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L563)
+[packages/core/src/types.ts:582](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L582)

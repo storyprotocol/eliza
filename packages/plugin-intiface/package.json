@@ -1,11 +1,25 @@
 {
-    "name": "@ai16z/plugin-intiface",
-    "version": "0.1.5-alpha.5",
-    "main": "dist/index.js",
+    "name": "@elizaos/plugin-intiface",
+    "version": "0.1.8+build.1",
     "type": "module",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
     "types": "dist/index.d.ts",
+    "exports": {
+        "./package.json": "./package.json",
+        ".": {
+            "import": {
+                "@elizaos/source": "./src/index.ts",
+                "types": "./dist/index.d.ts",
+                "default": "./dist/index.js"
+            }
+        }
+    },
+    "files": [
+        "dist"
+    ],
     "dependencies": {
-        "@ai16z/eliza": "workspace:*",
+        "@elizaos/core": "workspace:*",
         "buttplug": "3.2.2",
         "net": "1.0.2",
         "tsup": "8.3.5"

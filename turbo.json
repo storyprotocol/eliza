@@ -4,16 +4,50 @@
         "check-types": {
             "dependsOn": ["build"]
         },
-        "@ai16z/agent#check-types": {
-            "dependsOn": ["@ai16z/plugin-solana#build"]
+        "@elizaos/agent#check-types": {
+            "dependsOn": [
+                "@elizaos/plugin-solana#build",
+                "@elizaos/plugin-direct#build"
+            ]
         },
         "build": {
             "outputs": ["dist/**"],
-            "dependsOn": ["^@ai16z/eliza#build"]
+            "dependsOn": ["^@elizaos/core#build"]
         },
-        "@ai16z/plugin-solana#build": {
+        "@elizaos/client-direct#build": {
             "outputs": ["dist/**"],
-            "dependsOn": ["@ai16z/plugin-trustdb#build"]
+            "dependsOn": [
+                "@elizaos/plugin-image-generation#build",
+                "@elizaos/plugin-tee-log#build"
+            ]
+        },
+        "@elizaos/plugin-solana#build": {
+            "outputs": ["dist/**"],
+            "dependsOn": [
+                "@elizaos/plugin-trustdb#build",
+                "@elizaos/plugin-tee#build"
+            ]
+        },
+        "@elizaos/plugin-nft-generation#build": {
+            "outputs": ["dist/**"],
+            "dependsOn": ["@elizaos/plugin-node#build"]
+        },
+        "@elizaos/plugin-evm#build": {
+            "outputs": ["dist/**"],
+            "dependsOn": ["@elizaos/plugin-tee#build"]
+        },
+        "@elizaos/plugin-tee-log#build": {
+            "outputs": ["dist/**"],
+            "dependsOn": [
+                "@elizaos/plugin-tee#build",
+                "@elizaos/plugin-sgx#build"
+            ]
+        },
+        "@elizaos/plugin-quai#build": {
+            "outputs": ["dist/**"],
+            "dependsOn": [
+                "@elizaos/plugin-trustdb#build"
+            ]
         },
         "eliza-docs#build": {
             "outputs": ["build/**"]

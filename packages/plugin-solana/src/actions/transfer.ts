@@ -2,7 +2,7 @@ import {
     getAssociatedTokenAddressSync,
     createTransferInstruction,
 } from "@solana/spl-token";
-import { elizaLogger, settings } from "@ai16z/eliza";
+import { elizaLogger, settings } from "@elizaos/core";
 
 import {
     Connection,
@@ -20,10 +20,10 @@ import {
     ModelClass,
     State,
     type Action,
-} from "@ai16z/eliza";
-import { composeContext } from "@ai16z/eliza";
+} from "@elizaos/core";
+import { composeContext } from "@elizaos/core";
 import { getWalletKey } from "../keypairUtils";
-import { generateObjectDEPRECATED } from "@ai16z/eliza";
+import { generateObjectDeprecated } from "@elizaos/core";
 
 export interface TransferContent extends Content {
     tokenAddress: string;
@@ -35,7 +35,7 @@ function isTransferContent(
     runtime: IAgentRuntime,
     content: any
 ): content is TransferContent {
-    console.log("Content for transfer", content);
+    elizaLogger.log("Content for transfer", content);
     return (
         typeof content.tokenAddress === "string" &&
         typeof content.recipient === "string" &&
@@ -74,21 +74,21 @@ export default {
         "PAY",
     ],
     validate: async (runtime: IAgentRuntime, message: Memory) => {
-        console.log("Validating transfer from user:", message.userId);
+        elizaLogger.log("Validating transfer from user:", message.userId);
         //add custom validate logic here
         /*
             const adminIds = runtime.getSetting("ADMIN_USER_IDS")?.split(",") || [];
-            //console.log("Admin IDs from settings:", adminIds);
+            //elizaLogger.log("Admin IDs from settings:", adminIds);
 
             const isAdmin = adminIds.includes(message.userId);
 
             if (isAdmin) {
-                //console.log(`Authorized transfer from user: ${message.userId}`);
+                //elizaLogger.log(`Authorized transfer from user: ${message.userId}`);
                 return true;
             }
             else
             {
-                //console.log(`Unauthorized transfer attempt from user: ${message.userId}`);
+                //elizaLogger.log(`Unauthorized transfer attempt from user: ${message.userId}`);
                 return false;
             }
             */
@@ -118,7 +118,7 @@ export default {
         });
 
         // Generate transfer content
-        const content = await generateObjectDEPRECATED({
+        const content = await generateObjectDeprecated({
             runtime,
             context: transferContext,
             modelClass: ModelClass.LARGE,
@@ -126,7 +126,7 @@ export default {
 
         // Validate transfer content
         if (!isTransferContent(runtime, content)) {
-            console.error("Invalid content for TRANSFER_TOKEN action.");
+            elizaLogger.error("Invalid content for TRANSFER_TOKEN action.");
             if (callback) {
                 callback({
                     text: "Unable to process transfer request. Invalid content provided.",
@@ -142,7 +142,7 @@ export default {
                 true
             );
 
-            const connection = new Connection(settings.RPC_URL!);
+            const connection = new Connection(settings.SOLANA_RPC_URL!);
 
             const mintPubkey = new PublicKey(content.tokenAddress);
             const recipientPubkey = new PublicKey(content.recipient);
@@ -156,7 +156,7 @@ export default {
             const adjustedAmount = BigInt(
                 Number(content.amount) * Math.pow(10, decimals)
             );
-            console.log(
+            elizaLogger.log(
                 `Transferring: ${content.amount} tokens (${adjustedAmount} base units)`
             );
 
@@ -210,7 +210,7 @@ export default {
             // Send transaction
             const signature = await connection.sendTransaction(transaction);
 
-            console.log("Transfer successful:", signature);
+            elizaLogger.log("Transfer successful:", signature);
 
             if (callback) {
                 callback({
@@ -226,7 +226,7 @@ export default {
 
             return true;
         } catch (error) {
-            console.error("Error during token transfer:", error);
+            elizaLogger.error("Error during token transfer:", error);
             if (callback) {
                 callback({
                     text: `Error transferring tokens: ${error.message}`,

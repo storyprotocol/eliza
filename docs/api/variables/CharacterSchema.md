@@ -1,4 +1,4 @@
-[@ai16z/eliza v0.1.5-alpha.3](../index.md) / CharacterSchema
+[@elizaos/core v0.1.7](../index.md) / CharacterSchema
 
 # Variable: CharacterSchema
 
@@ -22,7 +22,7 @@ Main Character schema
 
 ### modelProvider
 
-> **modelProvider**: `ZodNativeEnum`\<*typeof* [`ModelProviderName`](../enumerations/ModelProviderName.md)\>
+> **modelProvider**: `ZodNativeEnum`\<_typeof_ [`ModelProviderName`](../enumerations/ModelProviderName.md)\>
 
 ### modelEndpointOverride
 
@@ -62,7 +62,7 @@ Main Character schema
 
 ### clients
 
-> **clients**: `ZodArray`\<`ZodNativeEnum`\<*typeof* [`Clients`](../enumerations/Clients.md)\>, `"many"`\>
+> **clients**: `ZodArray`\<`ZodNativeEnum`\<_typeof_ [`Clients`](../enumerations/Clients.md)\>, `"many"`\>
 
 ### plugins
 
@@ -98,6 +98,10 @@ Main Character schema
 
 > **twitterProfile**: `ZodOptional`\<`ZodObject`\<`object`, `"strip"`, `ZodTypeAny`, `object`, `object`\>\>
 
+### nft
+
+> **nft**: `ZodOptional`\<`ZodObject`\<`object`, `"strip"`, `ZodTypeAny`, `object`, `object`\>\>
+
 ## Defined in
 
-[packages/core/src/environment.ts:66](https://github.com/monilpat/eliza/blob/main/packages/core/src/environment.ts#L66)
+[packages/core/src/environment.ts:66](https://github.com/elizaOS/eliza/blob/main/packages/core/src/environment.ts#L66)

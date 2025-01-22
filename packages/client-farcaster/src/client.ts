@@ -1,4 +1,4 @@
-import { IAgentRuntime, elizaLogger } from "@ai16z/eliza";
+import { IAgentRuntime, elizaLogger } from "@elizaos/core";
 import { NeynarAPIClient, isApiErrorResponse } from "@neynar/nodejs-sdk";
 import { NeynarCastResponse, Cast, Profile, FidRequest, CastId } from "./types";
 
@@ -63,10 +63,10 @@ export class FarcasterClient {
             }
         } catch (err) {
             if (isApiErrorResponse(err)) {
-                elizaLogger.error('Neynar error: ', err.response.data);
+                elizaLogger.error("Neynar error: ", err.response.data);
                 throw err.response.data;
             } else {
-                elizaLogger.error('Error: ', err);
+                elizaLogger.error("Error: ", err);
                 throw err;
             }
         }
@@ -172,7 +172,7 @@ export class FarcasterClient {
 
         const result = await this.neynar.fetchBulkUsers({ fids: [fid] });
         if (!result.users || result.users.length < 1) {
-            elizaLogger.error('Error fetching user by fid');
+            elizaLogger.error("Error fetching user by fid");
 
             throw "getProfile ERROR";
         }

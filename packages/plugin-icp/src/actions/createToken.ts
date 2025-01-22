@@ -2,8 +2,8 @@ import {
     composeContext,
     generateImage,
     generateText,
-    generateObjectDEPRECATED,
-} from "@ai16z/eliza";
+    generateObjectDeprecated,
+} from "@elizaos/core";
 import {
     ActionExample,
     HandlerCallback,
@@ -12,7 +12,7 @@ import {
     ModelClass,
     State,
     type Action,
-} from "@ai16z/eliza";
+} from "@elizaos/core";
 import { idlFactory } from "../canisters/pick-pump/index.did";
 import { _SERVICE } from "../canisters/pick-pump/index.did.d";
 import { ActorCreator, CreateMemeTokenArg } from "../types";
@@ -148,7 +148,7 @@ export const executeCreateToken: Action = {
             template: createTokenTemplate,
         });
 
-        const response = await generateObjectDEPRECATED({
+        const response = await generateObjectDeprecated({
             runtime,
             context: createTokenContext,
             modelClass: ModelClass.LARGE,

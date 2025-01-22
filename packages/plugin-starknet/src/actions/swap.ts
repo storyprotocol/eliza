@@ -3,13 +3,13 @@ import {
     ActionExample,
     composeContext,
     elizaLogger,
-    generateObjectDEPRECATED,
+    generateObjectDeprecated,
     HandlerCallback,
     IAgentRuntime,
     Memory,
     ModelClass,
     State,
-} from "@ai16z/eliza";
+} from "@elizaos/core";
 import {
     executeSwap as executeAvnuSwap,
     fetchQuotes,
@@ -105,7 +105,7 @@ export const executeSwap: Action = {
             template: swapTemplate,
         });
 
-        const response = await generateObjectDEPRECATED({
+        const response = await generateObjectDeprecated({
             runtime,
             context: swapContext,
             modelClass: ModelClass.MEDIUM,

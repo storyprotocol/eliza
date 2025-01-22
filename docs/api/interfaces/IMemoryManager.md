@@ -1,4 +1,4 @@
-[@ai16z/eliza v0.1.5-alpha.3](../index.md) / IMemoryManager
+[@elizaos/core v0.1.7](../index.md) / IMemoryManager
 
 # Interface: IMemoryManager
 
@@ -10,9 +10,9 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:905](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L905)
+[packages/core/src/types.ts:1021](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L1021)
 
-***
+---
 
 ### tableName
 
@@ -20,9 +20,9 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:906](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L906)
+[packages/core/src/types.ts:1022](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L1022)
 
-***
+---
 
 ### constructor
 
@@ -30,7 +30,7 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:907](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L907)
+[packages/core/src/types.ts:1023](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L1023)
 
 ## Methods
 
@@ -48,9 +48,9 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:909](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L909)
+[packages/core/src/types.ts:1025](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L1025)
 
-***
+---
 
 ### getMemories()
 
@@ -76,9 +76,9 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:911](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L911)
+[packages/core/src/types.ts:1027](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L1027)
 
-***
+---
 
 ### getCachedEmbeddings()
 
@@ -94,9 +94,9 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:919](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L919)
+[packages/core/src/types.ts:1035](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L1035)
 
-***
+---
 
 ### getMemoryById()
 
@@ -112,9 +112,9 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:923](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L923)
+[packages/core/src/types.ts:1039](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L1039)
 
-***
+---
 
 ### getMemoriesByRoomIds()
 
@@ -132,9 +132,9 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:924](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L924)
+[packages/core/src/types.ts:1040](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L1040)
 
-***
+---
 
 ### searchMemoriesByEmbedding()
 
@@ -146,7 +146,7 @@
 
 • **opts**
 
-• **opts.match\_threshold?**: `number`
+• **opts.match_threshold?**: `number`
 
 • **opts.count?**: `number`
 
@@ -160,9 +160,9 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:925](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L925)
+[packages/core/src/types.ts:1041](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L1041)
 
-***
+---
 
 ### createMemory()
 
@@ -180,9 +180,9 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:935](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L935)
+[packages/core/src/types.ts:1051](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L1051)
 
-***
+---
 
 ### removeMemory()
 
@@ -198,9 +198,9 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:937](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L937)
+[packages/core/src/types.ts:1053](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L1053)
 
-***
+---
 
 ### removeAllMemories()
 
@@ -216,9 +216,9 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:939](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L939)
+[packages/core/src/types.ts:1055](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L1055)
 
-***
+---
 
 ### countMemories()
 
@@ -236,4 +236,4 @@
 
 #### Defined in
 
-[packages/core/src/types.ts:941](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L941)
+[packages/core/src/types.ts:1057](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L1057)

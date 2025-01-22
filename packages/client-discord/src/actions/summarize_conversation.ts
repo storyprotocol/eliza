@@ -1,8 +1,7 @@
-import { composeContext } from "@ai16z/eliza";
-import { generateText, splitChunks, trimTokens } from "@ai16z/eliza";
-import { getActorDetails } from "@ai16z/eliza";
-import { models } from "@ai16z/eliza";
-import { parseJSONObjectFromText } from "@ai16z/eliza";
+import { composeContext, getModelSettings } from "@elizaos/core";
+import { generateText, splitChunks, trimTokens } from "@elizaos/core";
+import { getActorDetails } from "@elizaos/core";
+import { parseJSONObjectFromText } from "@elizaos/core";
 import {
     Action,
     ActionExample,
@@ -13,7 +12,7 @@ import {
     Memory,
     ModelClass,
     State,
-} from "@ai16z/eliza";
+} from "@elizaos/core";
 export const summarizationTemplate = `# Summarized so far (we are adding to this)
 {{currentSummary}}
 
@@ -247,8 +246,11 @@ const summarizeAction = {
 
         let currentSummary = "";
 
-        const model = models[runtime.character.settings.model];
-        const chunkSize = model.settings.maxContextLength - 1000;
+        const modelSettings = getModelSettings(
+            runtime.character.modelProvider,
+            ModelClass.SMALL
+        );
+        const chunkSize = modelSettings.maxOutputTokens - 1000;
 
         const chunks = await splitChunks(formattedMemories, chunkSize, 0);
 
@@ -261,14 +263,15 @@ const summarizeAction = {
             const chunk = chunks[i];
             state.currentSummary = currentSummary;
             state.currentChunk = chunk;
+            const template = await trimTokens(
+                summarizationTemplate,
+                chunkSize + 500,
+                runtime
+            );
             const context = composeContext({
                 state,
                 // make sure it fits, we can pad the tokens a bit
-                template: trimTokens(
-                    summarizationTemplate,
-                    chunkSize + 500,
-                    "gpt-4o-mini"
-                ),
+                template,
             });
 
             const summary = await generateText({
@@ -378,7 +381,7 @@ ${currentSummary.trim()}
             {
                 user: "{{user2}}",
                 content: {
-                    text: "no probblem, give me a few minutes to read through everything",
+                    text: "no problem, give me a few minutes to read through everything",
                     action: "SUMMARIZE",
                 },
             },

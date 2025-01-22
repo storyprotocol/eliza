@@ -1,4 +1,4 @@
-[@ai16z/eliza v0.1.5-alpha.3](../index.md) / Media
+[@elizaos/core v0.1.7](../index.md) / Media
 
 # Type Alias: Media
 
@@ -44,6 +44,12 @@ Media description
 
 Text content
 
+### contentType?
+
+> `optional` **contentType**: `string`
+
+Content type
+
 ## Defined in
 
-[packages/core/src/types.ts:540](https://github.com/monilpat/eliza/blob/main/packages/core/src/types.ts#L540)
+[packages/core/src/types.ts:556](https://github.com/elizaOS/eliza/blob/main/packages/core/src/types.ts#L556)

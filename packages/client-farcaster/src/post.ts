@@ -4,11 +4,11 @@ import {
     IAgentRuntime,
     ModelClass,
     stringToUuid,
-    elizaLogger
-} from "@ai16z/eliza";
+    elizaLogger,
+} from "@elizaos/core";
 import { FarcasterClient } from "./client";
 import { formatTimeline, postTemplate } from "./prompts";
-import { castUuid } from "./utils";
+import { castUuid, MAX_CAST_LENGTH } from "./utils";
 import { createCastMemory } from "./memory";
 import { sendCast } from "./actions";
 
@@ -27,7 +27,7 @@ export class FarcasterPostManager {
             try {
                 await this.generateNewCast();
             } catch (error) {
-                elizaLogger.error(error)
+                elizaLogger.error(error);
                 return;
             }
 
@@ -100,30 +100,25 @@ export class FarcasterPostManager {
 
             const slice = newContent.replaceAll(/\\n/g, "\n").trim();
 
-            const contentLength = 240;
+            let content = slice.slice(0, MAX_CAST_LENGTH);
 
-            let content = slice.slice(0, contentLength);
-
-            // if its bigger than 280, delete the last line
-            if (content.length > 280) {
+            // if it's bigger than the max limit, delete the last line
+            if (content.length > MAX_CAST_LENGTH) {
                 content = content.slice(0, content.lastIndexOf("\n"));
             }
 
-            if (content.length > contentLength) {
+            if (content.length > MAX_CAST_LENGTH) {
                 // slice at the last period
                 content = content.slice(0, content.lastIndexOf("."));
             }
 
             // if it's still too long, get the period before the last period
-            if (content.length > contentLength) {
+            if (content.length > MAX_CAST_LENGTH) {
                 content = content.slice(0, content.lastIndexOf("."));
             }
 
-
             if (this.runtime.getSetting("FARCASTER_DRY_RUN") === "true") {
-                elizaLogger.info(
-                    `Dry run: would have cast: ${content}`
-                );
+                elizaLogger.info(`Dry run: would have cast: ${content}`);
                 return;
             }
 
@@ -149,7 +144,9 @@ export class FarcasterPostManager {
                     roomId
                 );
 
-                elizaLogger.info(`[Farcaster Neynar Client] Published cast ${cast.hash}`);
+                elizaLogger.info(
+                    `[Farcaster Neynar Client] Published cast ${cast.hash}`
+                );
 
                 await this.runtime.messageManager.createMemory(
                     createCastMemory({
@@ -159,10 +156,10 @@ export class FarcasterPostManager {
                     })
                 );
             } catch (error) {
-                elizaLogger.error("Error sending cast:", error)
+                elizaLogger.error("Error sending cast:", error);
             }
         } catch (error) {
-            elizaLogger.error("Error generating new cast:", error)
+            elizaLogger.error("Error generating new cast:", error);
         }
     }
 }

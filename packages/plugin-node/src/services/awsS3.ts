@@ -3,7 +3,8 @@ import {
     IAwsS3Service,
     Service,
     ServiceType,
-} from "@ai16z/eliza";
+    elizaLogger,
+} from "@elizaos/core";
 import {
     GetObjectCommand,
     PutObjectCommand,
@@ -20,19 +21,19 @@ interface UploadResult {
 }
 
 interface JsonUploadResult extends UploadResult {
-    key?: string;  // Add storage key
+    key?: string; // Add storage key
 }
 
 export class AwsS3Service extends Service implements IAwsS3Service {
     static serviceType: ServiceType = ServiceType.AWS_S3;
 
     private s3Client: S3Client | null = null;
-    private bucket: string = '';
-    private fileUploadPath: string = '';
+    private bucket: string = "";
+    private fileUploadPath: string = "";
     private runtime: IAgentRuntime | null = null;
 
     async initialize(runtime: IAgentRuntime): Promise<void> {
-        console.log("Initializing AwsS3Service");
+        elizaLogger.log("Initializing AwsS3Service");
         this.runtime = runtime;
         this.fileUploadPath = runtime.getSetting("AWS_S3_UPLOAD_PATH") ?? "";
     }
@@ -42,11 +43,18 @@ export class AwsS3Service extends Service implements IAwsS3Service {
         if (!this.runtime) return false;
 
         const AWS_ACCESS_KEY_ID = this.runtime.getSetting("AWS_ACCESS_KEY_ID");
-        const AWS_SECRET_ACCESS_KEY = this.runtime.getSetting("AWS_SECRET_ACCESS_KEY");
+        const AWS_SECRET_ACCESS_KEY = this.runtime.getSetting(
+            "AWS_SECRET_ACCESS_KEY"
+        );
         const AWS_REGION = this.runtime.getSetting("AWS_REGION");
         const AWS_S3_BUCKET = this.runtime.getSetting("AWS_S3_BUCKET");
 
-        if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY || !AWS_REGION || !AWS_S3_BUCKET) {
+        if (
+            !AWS_ACCESS_KEY_ID ||
+            !AWS_SECRET_ACCESS_KEY ||
+            !AWS_REGION ||
+            !AWS_S3_BUCKET
+        ) {
             return false;
         }
 
@@ -63,11 +71,12 @@ export class AwsS3Service extends Service implements IAwsS3Service {
 
     async uploadFile(
         filePath: string,
+        subDirectory: string = "",
         useSignedUrl: boolean = false,
         expiresIn: number = 900
     ): Promise<UploadResult> {
         try {
-            if (!await this.initializeS3Client()) {
+            if (!(await this.initializeS3Client())) {
                 return {
                     success: false,
                     error: "AWS S3 credentials not configured",
@@ -85,7 +94,11 @@ export class AwsS3Service extends Service implements IAwsS3Service {
 
             const baseFileName = `${Date.now()}-${path.basename(filePath)}`;
             // Determine storage path based on public access
-            const fileName =`${this.fileUploadPath}/${baseFileName}`.replaceAll('//', '/');
+            const fileName =
+                `${this.fileUploadPath}${subDirectory}/${baseFileName}`.replaceAll(
+                    "//",
+                    "/"
+                );
             // Set upload parameters
             const uploadParams = {
                 Bucket: this.bucket,
@@ -123,7 +136,10 @@ export class AwsS3Service extends Service implements IAwsS3Service {
         } catch (error) {
             return {
                 success: false,
-                error: error instanceof Error ? error.message : "Unknown error occurred",
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "Unknown error occurred",
             };
         }
     }
@@ -135,7 +151,7 @@ export class AwsS3Service extends Service implements IAwsS3Service {
         fileName: string,
         expiresIn: number = 900
     ): Promise<string> {
-        if (!await this.initializeS3Client()) {
+        if (!(await this.initializeS3Client())) {
             throw new Error("AWS S3 credentials not configured");
         }
 
@@ -175,7 +191,7 @@ export class AwsS3Service extends Service implements IAwsS3Service {
         expiresIn: number = 900
     ): Promise<JsonUploadResult> {
         try {
-            if (!await this.initializeS3Client()) {
+            if (!(await this.initializeS3Client())) {
                 return {
                     success: false,
                     error: "AWS S3 credentials not configured",
@@ -195,11 +211,11 @@ export class AwsS3Service extends Service implements IAwsS3Service {
             const actualFileName = fileName || `${timestamp}.json`;
 
             // Build complete file path
-            let fullPath = this.fileUploadPath || '';
+            let fullPath = this.fileUploadPath || "";
             if (subDirectory) {
-                fullPath = `${fullPath}/${subDirectory}`.replace(/\/+/g, '/');
+                fullPath = `${fullPath}/${subDirectory}`.replace(/\/+/g, "/");
             }
-            const key = `${fullPath}/${actualFileName}`.replace(/\/+/g, '/');
+            const key = `${fullPath}/${actualFileName}`.replace(/\/+/g, "/");
 
             // Convert JSON to string
             const jsonString = JSON.stringify(jsonData, null, 2);
@@ -209,7 +225,7 @@ export class AwsS3Service extends Service implements IAwsS3Service {
                 Bucket: this.bucket,
                 Key: key,
                 Body: jsonString,
-                ContentType: 'application/json',
+                ContentType: "application/json",
             };
 
             // Upload file
@@ -237,11 +253,13 @@ export class AwsS3Service extends Service implements IAwsS3Service {
             }
 
             return result;
-
         } catch (error) {
             return {
                 success: false,
-                error: error instanceof Error ? error.message : "Unknown error occurred",
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "Unknown error occurred",
             };
         }
     }

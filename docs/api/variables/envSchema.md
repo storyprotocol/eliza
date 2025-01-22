@@ -1,4 +1,4 @@
-[@ai16z/eliza v0.1.5-alpha.3](../index.md) / envSchema
+[@elizaos/core v0.1.7](../index.md) / envSchema
 
 # Variable: envSchema
 
@@ -8,36 +8,36 @@ TODO: TO COMPLETE
 
 ## Type declaration
 
-### OPENAI\_API\_KEY
+### OPENAI_API_KEY
 
-> **OPENAI\_API\_KEY**: `ZodString`
+> **OPENAI_API_KEY**: `ZodString`
 
 API Keys with specific formats
 
-### REDPILL\_API\_KEY
+### REDPILL_API_KEY
 
-> **REDPILL\_API\_KEY**: `ZodString`
+> **REDPILL_API_KEY**: `ZodString`
 
-### GROK\_API\_KEY
+### GROK_API_KEY
 
-> **GROK\_API\_KEY**: `ZodString`
+> **GROK_API_KEY**: `ZodString`
 
-### GROQ\_API\_KEY
+### GROQ_API_KEY
 
-> **GROQ\_API\_KEY**: `ZodString`
+> **GROQ_API_KEY**: `ZodString`
 
-### OPENROUTER\_API\_KEY
+### OPENROUTER_API_KEY
 
-> **OPENROUTER\_API\_KEY**: `ZodString`
+> **OPENROUTER_API_KEY**: `ZodString`
 
-### GOOGLE\_GENERATIVE\_AI\_API\_KEY
+### GOOGLE_GENERATIVE_AI_API_KEY
 
-> **GOOGLE\_GENERATIVE\_AI\_API\_KEY**: `ZodString`
+> **GOOGLE_GENERATIVE_AI_API_KEY**: `ZodString`
 
-### ELEVENLABS\_XI\_API\_KEY
+### ELEVENLABS_XI_API_KEY
 
-> **ELEVENLABS\_XI\_API\_KEY**: `ZodString`
+> **ELEVENLABS_XI_API_KEY**: `ZodString`
 
 ## Defined in
 
-[packages/core/src/environment.ts:5](https://github.com/monilpat/eliza/blob/main/packages/core/src/environment.ts#L5)
+[packages/core/src/environment.ts:5](https://github.com/elizaOS/eliza/blob/main/packages/core/src/environment.ts#L5)

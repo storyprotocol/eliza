@@ -32,8 +32,8 @@ _Utilisée dans [@DegenSpartanAI](https://x.com/degenspartanai) et [@MarcAIndree
 1. Ouvrir le document `src/core/defaultCharacter.ts` afin de modifier le personnage par défaut
 
 2. Pour ajouter des personnages personnalisés :
-   - Lancer la commande `pnpm start --characters="path/to/your/character.json"`
-   - Plusieurs fichiers personnages peuvent être ajoutés en même temps
+    - Lancer la commande `pnpm start --characters="path/to/your/character.json"`
+    - Plusieurs fichiers personnages peuvent être ajoutés en même temps
 
 ### Lancer Eliza
 
@@ -102,7 +102,6 @@ TWITTER_DRY_RUN=false
 TWITTER_USERNAME= # Account username
 TWITTER_PASSWORD= # Account password
 TWITTER_EMAIL= # Account email
-TWITTER_COOKIES= # Account cookies
 
 X_SERVER_URL=
 XAI_API_KEY=
@@ -119,7 +118,7 @@ BIRDEYE_API_KEY=
 
 SOL_ADDRESS=So11111111111111111111111111111111111111112
 SLIPPAGE=1
-RPC_URL=https://api.mainnet-beta.solana.com
+SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
 HELIUS_API_KEY=
 
 

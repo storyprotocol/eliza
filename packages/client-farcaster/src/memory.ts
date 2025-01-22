@@ -5,7 +5,7 @@ import {
     stringToUuid,
     type Memory,
     type UUID,
-} from "@ai16z/eliza";
+} from "@elizaos/core";
 import type { Cast } from "./types";
 import { toHex } from "viem";
 import { castUuid } from "./utils";
@@ -20,10 +20,10 @@ export function createCastMemory({
     runtime: IAgentRuntime;
     cast: Cast;
 }): Memory {
-    const inReplyTo =  cast.inReplyTo
+    const inReplyTo = cast.inReplyTo
         ? castUuid({
-            hash: toHex(cast.inReplyTo.hash),
-            agentId: runtime.agentId,
+              hash: toHex(cast.inReplyTo.hash),
+              agentId: runtime.agentId,
           })
         : undefined;
 

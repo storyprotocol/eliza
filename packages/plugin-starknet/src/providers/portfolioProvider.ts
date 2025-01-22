@@ -4,7 +4,7 @@ import {
     Memory,
     Provider,
     State,
-} from "@ai16z/eliza";
+} from "@elizaos/core";
 
 import { fetchWithRetry, getStarknetAccount } from "../utils";
 import { ERC20Token } from "../utils/ERC20Token";
@@ -119,4 +119,4 @@ const walletProvider: Provider = {
     },
 };
 
-export { walletProvider };
+export { walletProvider, TokenBalances };

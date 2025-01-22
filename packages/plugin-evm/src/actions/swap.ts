@@ -1,15 +1,20 @@
-import type { IAgentRuntime, Memory, State } from "@ai16z/eliza";
+import type { IAgentRuntime, Memory, State } from "@elizaos/core";
 import {
-    ChainId,
+    composeContext,
+    generateObjectDeprecated,
+    ModelClass,
+} from "@elizaos/core";
+import {
     createConfig,
     executeRoute,
     ExtendedChain,
     getRoutes,
 } from "@lifi/sdk";
-import { WalletProvider } from "../providers/wallet";
-import { getChainConfigs } from "../providers/chainConfigs";
+
+import { initWalletProvider, WalletProvider } from "../providers/wallet";
 import { swapTemplate } from "../templates";
 import type { SwapParams, Transaction } from "../types";
+import { parseEther } from "viem";
 
 export { swapTemplate };
 
@@ -19,16 +24,14 @@ export class SwapAction {
     constructor(private walletProvider: WalletProvider) {
         this.config = createConfig({
             integrator: "eliza",
-            chains: Object.values(
-                getChainConfigs(this.walletProvider.runtime)
-            ).map((config) => ({
-                id: config.chainId,
+            chains: Object.values(this.walletProvider.chains).map((config) => ({
+                id: config.id,
                 name: config.name,
                 key: config.name.toLowerCase(),
                 chainType: "EVM" as const,
                 nativeToken: {
                     ...config.nativeCurrency,
-                    chainId: config.chainId,
+                    chainId: config.id,
                     address: "0x0000000000000000000000000000000000000000",
                     coinKey: config.nativeCurrency.symbol,
                     priceUSD: "0",
@@ -38,15 +41,15 @@ export class SwapAction {
                     name: config.nativeCurrency.name,
                 },
                 rpcUrls: {
-                    public: { http: [config.rpcUrl] },
+                    public: { http: [config.rpcUrls.default.http[0]] },
                 },
-                blockExplorerUrls: [config.blockExplorerUrl],
+                blockExplorerUrls: [config.blockExplorers.default.url],
                 metamask: {
-                    chainId: `0x${config.chainId.toString(16)}`,
+                    chainId: `0x${config.id.toString(16)}`,
                     chainName: config.name,
                     nativeCurrency: config.nativeCurrency,
-                    rpcUrls: [config.rpcUrl],
-                    blockExplorerUrls: [config.blockExplorerUrl],
+                    rpcUrls: [config.rpcUrls.default.http[0]],
+                    blockExplorerUrls: [config.blockExplorers.default.url],
                 },
                 coin: config.nativeCurrency.symbol,
                 mainnet: true,
@@ -56,19 +59,15 @@ export class SwapAction {
     }
 
     async swap(params: SwapParams): Promise<Transaction> {
-        const walletClient = this.walletProvider.getWalletClient();
+        const walletClient = this.walletProvider.getWalletClient(params.chain);
         const [fromAddress] = await walletClient.getAddresses();
 
         const routes = await getRoutes({
-            fromChainId: getChainConfigs(this.walletProvider.runtime)[
-                params.chain
-            ].chainId as ChainId,
-            toChainId: getChainConfigs(this.walletProvider.runtime)[
-                params.chain
-            ].chainId as ChainId,
+            fromChainId: this.walletProvider.getChainConfigs(params.chain).id,
+            toChainId: this.walletProvider.getChainConfigs(params.chain).id,
             fromTokenAddress: params.fromToken,
             toTokenAddress: params.toToken,
-            fromAmount: params.amount,
+            fromAmount: parseEther(params.amount).toString(),
             fromAddress: fromAddress,
             options: {
                 slippage: params.slippage || 0.5,
@@ -90,10 +89,9 @@ export class SwapAction {
             from: fromAddress,
             to: routes.routes[0].steps[0].estimate
                 .approvalAddress as `0x${string}`,
-            value: BigInt(params.amount),
+            value: 0n,
             data: process.data as `0x${string}`,
-            chainId: getChainConfigs(this.walletProvider.runtime)[params.chain]
-                .chainId,
+            chainId: this.walletProvider.getChainConfigs(params.chain).id,
         };
     }
 }
@@ -103,15 +101,48 @@ export const swapAction = {
     description: "Swap tokens on the same chain",
     handler: async (
         runtime: IAgentRuntime,
-        message: Memory,
+        _message: Memory,
         state: State,
-        options: any,
+        _options: any,
         callback?: any
     ) => {
+        console.log("Swap action handler called");
+        const walletProvider = await initWalletProvider(runtime);
+        const action = new SwapAction(walletProvider);
+
+        // Compose swap context
+        const swapContext = composeContext({
+            state,
+            template: swapTemplate,
+        });
+        const content = await generateObjectDeprecated({
+            runtime,
+            context: swapContext,
+            modelClass: ModelClass.LARGE,
+        });
+
+        const swapOptions: SwapParams = {
+            chain: content.chain,
+            fromToken: content.inputToken,
+            toToken: content.outputToken,
+            amount: content.amount,
+            slippage: content.slippage,
+        };
+
         try {
-            const walletProvider = new WalletProvider(runtime);
-            const action = new SwapAction(walletProvider);
-            return await action.swap(options);
+            const swapResp = await action.swap(swapOptions);
+            if (callback) {
+                callback({
+                    text: `Successfully swap ${swapOptions.amount} ${swapOptions.fromToken} tokens to ${swapOptions.toToken}\nTransaction Hash: ${swapResp.hash}`,
+                    content: {
+                        success: true,
+                        hash: swapResp.hash,
+                        recipient: swapResp.to,
+                        chain: content.chain,
+                    },
+                });
+            }
+            return true;
         } catch (error) {
             console.error("Error in swap handler:", error.message);
             if (callback) {
